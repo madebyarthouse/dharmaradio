@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Teacher {
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String   @default("") @db.LongText
+  profileImageUrl String? @db.VarChar(1024)
+  dharmaSeedId    Int @unique
+  language        String
+  lastBuildDate   DateTime
+  talks           Talk[]
+
+  @@index([dharmaSeedId])
+}
+
+model Talk {
+  id              Int      @id @default(autoincrement())
+  description     String   @default("") @db.LongText
+  title           String @db.VarChar(1024)
+  publicationDate DateTime
+  duration        Int
+  audioUrl        String @db.VarChar(1024)
+  dharmaSeedId    Int @unique
+  externalGuid    String @db.VarChar(1024)
+  teacherId       Int
+  teacher         Teacher  @relation(fields: [teacherId], references: [id])
+  centerId        Int?
+  center          Center?   @relation(fields: [centerId], references: [id])
+  retreatId       Int?
+  retreat         Retreat? @relation(fields: [retreatId], references: [id])
+
+  @@index([dharmaSeedId])
+
+  @@index([teacherId])
+  @@index([centerId])
+  @@index([retreatId])
+}
+
+model Center {
+  id              Int      @id @default(autoincrement())
+  name            String   @unique
+  dharmaSeedSubdomain    String @unique
+  websiteUrl      String? @db.VarChar(1024)
+  talks           Talk[]
+
+  @@index([dharmaSeedSubdomain])
+  @@index([name])
+}
+
+model Retreat {
+  id              Int      @id @default(autoincrement())
+  title            String @db.VarChar(1024)
+  description     String   @default("") @db.LongText
+  language        String
+  date       DateTime
+  dharmaSeedId    Int @unique
+  lastBuildDate   DateTime
+  talks           Talk[]
+
+  @@index([dharmaSeedId])
+}
