@@ -80,7 +80,6 @@ export default async function handler(
   console.time("total");
   for (const centerData of centers) {
     await bootstrapCenter(centerData);
-    break;
   }
   console.timeEnd("total");
 

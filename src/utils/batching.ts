@@ -13,9 +13,15 @@ export const batchPrismaTransactions = async <T extends PrismaPromise<any>>(
   let transactionResults: ReturnType<typeof prisma.$transaction<T[]>>[] = [];
   for (const batch of batches) {
     console.log(`Batching ${batch.length} transactions...`);
-    transactionResults = transactionResults.concat(
-      await prisma.$transaction(batch)
-    );
+    try {
+      transactionResults = transactionResults.concat(
+        await prisma.$transaction(batch)
+      );
+    } catch (e) {
+      console.log(e);
+      console.log(`Failure in batch ${batches.indexOf(batch)}, continuing...`);
+      continue;
+    }
   }
 
   return transactionResults;

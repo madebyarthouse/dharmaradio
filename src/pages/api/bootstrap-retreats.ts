@@ -20,38 +20,46 @@ export default async function handler(
   const retreats = RetreatJSONValidator.parse(JSON.parse(fileContents));
 
   for (const retreatData of retreats) {
-    const retreat = await prisma.retreat.upsert({
-      where: {
-        dharmaSeedId: retreatData.retreat.dharmaSeedId,
-      },
-      update: {},
-      create: {
-        title: retreatData.retreat.title,
-        description: retreatData.retreat.description,
-        language: retreatData.retreat.language,
-        date: new Date(retreatData.retreat.date),
-        lastBuildDate: new Date(retreatData.retreat.lastBuildDate),
-        dharmaSeedId: retreatData.retreat.dharmaSeedId,
-      },
-    });
+    try {
+      const retreat = await prisma.retreat.upsert({
+        where: {
+          dharmaSeedId: retreatData.retreat.dharmaSeedId,
+        },
+        update: {},
+        create: {
+          title: retreatData.retreat.title,
+          description: retreatData.retreat.description,
+          language: retreatData.retreat.language,
+          date: new Date(retreatData.retreat.date),
+          lastBuildDate: new Date(retreatData.retreat.lastBuildDate),
+          dharmaSeedId: retreatData.retreat.dharmaSeedId,
+        },
+      });
 
-    console.log(`${retreat.title} created`);
+      console.log(`${retreat.title} created`);
 
-    await batchPrismaTransactions(
-      retreatData.talkIds.map((talkId) => {
-        return prisma.talk.update({
-          where: { id: talkId },
-          data: {
-            retreat: {
-              connect: {
-                id: retreat.id,
+      await batchPrismaTransactions(
+        retreatData.talkIds.map((talkId) => {
+          return prisma.talk.update({
+            where: { dharmaSeedId: talkId },
+            data: {
+              retreat: {
+                connect: {
+                  id: retreat.id,
+                },
               },
             },
-          },
-        });
-      }),
-      10
-    );
+          });
+        }),
+        10
+      );
+    } catch (e) {
+      console.log(e);
+      console.log(
+        `Failed to create retreat with ID ${retreatData.retreat.dharmaSeedId}`
+      );
+      continue;
+    }
   }
 
   res.status(200).json({ success: true });

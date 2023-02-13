@@ -10,6 +10,7 @@ datasource db {
 
 model Teacher {
   id              Int      @id @default(autoincrement())
+  slug            String?   @unique
   name            String
   description     String   @default("") @db.LongText
   profileImageUrl String? @db.VarChar(1024)
@@ -23,8 +24,9 @@ model Teacher {
 
 model Talk {
   id              Int      @id @default(autoincrement())
+  slug            String?   @unique @db.VarChar(512)
   description     String   @default("") @db.LongText
-  title           String @db.VarChar(1024)
+  title           String @db.VarChar(512)
   publicationDate DateTime
   duration        Int
   audioUrl        String @db.VarChar(1024)
@@ -46,6 +48,7 @@ model Talk {
 
 model Center {
   id              Int      @id @default(autoincrement())
+  slug            String?   @unique
   name            String   @unique
   dharmaSeedSubdomain    String @unique
   websiteUrl      String? @db.VarChar(1024)
@@ -57,7 +60,8 @@ model Center {
 
 model Retreat {
   id              Int      @id @default(autoincrement())
-  title            String @db.VarChar(1024)
+  slug            String?   @unique @db.VarChar(512)
+  title            String @db.VarChar(512)
   description     String   @default("") @db.LongText
   language        String
   date       DateTime
