@@ -10,4 +10,29 @@
     --color-text: #222;
     --color-white: #fff;
   }
+
+  ::selection {
+    background-color: var(--color-brand);
+    color: var(--color-white);
+  }
+
+  .landing-bg {
+    background: radial-gradient(50% 50% at 50% 50%, #FFFFFF 0%, #FFFFFF 0%, rgba(82, 117, 85, 0) 0.01%, rgba(82, 117, 85, 0.1) 100%), #FFFFFF;
+  }
+
+  .breath-circle {
+    animation: breath-circle 4s ease-in-out 500ms infinite alternate;
+  }
+}
+
+@layer components {
+  @keyframes breath-circle {
+    0% {
+      transform: scale(0.25);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
 }

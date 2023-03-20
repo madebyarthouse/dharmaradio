@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Meditation talks",
 };
 
+export const revalidate = 3600; // 1 hour
+
 export default async function TalksPage({}) {
   const latestTalks = await prisma.talk.findMany({
     orderBy: {

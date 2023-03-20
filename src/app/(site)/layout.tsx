@@ -10,7 +10,7 @@ export default function SiteLayout({
   return (
     <div className="flex flex-col container mx-auto">
       <SiteHeader />
-      <main className="flex-grow">{children}</main>
+      <main className="flex-grow px-5">{children}</main>
       <SiteFooter />
     </div>
   );

@@ -7,10 +7,10 @@ export default function Heading({
 }) {
   const HeadingEl = level;
   const headingClasses = {
-    h1: "text-5xl font-bold font-heading",
-    h2: "text-4xl font-bold font-heading",
-    h3: "text-3xl font-bold font-heading",
-    h4: "text-2xl font-bold font-heading",
+    h1: "text-5xl text-brand font-semibold font-heading",
+    h2: "text-4xl text-brand font-medium font-heading",
+    h3: "text-3xl text-brand font-medium font-heading",
+    h4: "text-2xl text-brand font-medium font-heading",
   };
 
   return <HeadingEl className={headingClasses[level]}>{children}</HeadingEl>;

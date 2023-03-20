@@ -28,14 +28,16 @@ export default async function TeacherPage({
   }
 
   return (
-    <article className="flex flex-col md:flex-row gap-10">
+    <article className="flex flex-col md:flex-row gap-y-6 gap-x-20">
       <div className="w-full md:w-1/3 prose prose-h1:my-0">
         <div className="sticky top-0">
-          {teacher.profileImageUrl && (
-            <img src={teacher.profileImageUrl} alt={teacher.name} />
-          )}
-          <Heading level="h1">{teacher.name}</Heading>
-          <p>{teacher.description}</p>
+          <div className="flex flex-row md:flex-col lg:flex-row gap-5 items-center">
+            {teacher.profileImageUrl && (
+              <img src={teacher.profileImageUrl} alt={teacher.name} />
+            )}
+            <Heading level="h1">{teacher.name}</Heading>
+          </div>
+          <p className="prose prose-lg">{teacher.description}</p>
         </div>
       </div>
 

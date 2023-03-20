@@ -29,10 +29,12 @@ const links = [
 
 export default function SiteHeader({}) {
   return (
-    <header className="flex flex-row py-5">
-      <Link href="/">Dharma Radio</Link>
+    <header className="flex flex-col gap-5 text-center md:text-left md:flex-row items-center py-8 px-5">
+      <Link href="/" className="text-4xl font-bold">
+        Dharma&nbsp;Radio
+      </Link>
       <nav>
-        <ul className="flex flex-row gap-2">
+        <ul className="flex flex-row gap-2 flex-wrap justify-center md:justify-start text-lg">
           {links.map(({ href, label }) => (
             <li key={href}>
               <Link className="py-1 px-2 underline-offset-2" href={href}>
