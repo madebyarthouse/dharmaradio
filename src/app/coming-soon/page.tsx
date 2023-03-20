@@ -53,34 +53,47 @@ export default async function Home() {
           <Sounds />
         </section>
 
-        <header className="flex justify-center items-center flex-col">
+        <header className="flex gap-2 justify-center items-center flex-col">
           <div className="w-fit flex flex-col items-center justify-center gap-1">
             <Heading level="h1">Dharma Radio</Heading>
             <Heading level="h3">Coming Soon!</Heading>
           </div>
-          {/* <p className="w-[40ch] text-center">
-          Dharma Radio is a web application which makes the dharma talks from{" "}
-          <a target="_blank" href="https://dharmaseed.org">
-            Dharma Seed
-          </a>{" "}
-          more accesible.
-        </p> */}
+          <p className="w-[40ch] text-center">
+            Dharma Radio is a web application which makes the dharma talks from{" "}
+            <a
+              target="_blank"
+              className="underline underline-offset-2"
+              rel="noreferrer"
+              href="https://dharmaseed.org"
+            >
+              Dharma Seed
+            </a>{" "}
+            more accesible.
+          </p>
 
-          <hr className="expanding-line h-[2px] bg-brand transition-all mt-5" />
+          <hr className="expanding-line h-[1px] bg-brand transition-all mt-5" />
         </header>
 
         <footer className="max-w-full w-[65ch] mx-auto flex flex-col items-center justify-center">
           <div className="pt-5 flex items-center justify-center">
             <p className="">
               made by{" "}
-              <a target="_blank" href="https://twitter.com/chrcit">
+              <a
+                target="_blank"
+                rel="noreferrer"
+                href="https://twitter.com/chrcit"
+              >
                 @<span className="underline underline-offset-2">chrcit</span>
               </a>
             </p>
             <p className="px-2">/</p>
             <p>
               follow{" "}
-              <a target="_blank" href="https://twitter.com/dharmarad_io">
+              <a
+                target="_blank"
+                rel="noreferrer"
+                href="https://twitter.com/dharmarad_io"
+              >
                 @
                 <span className="underline underline-offset-2">
                   dharmarad_io
