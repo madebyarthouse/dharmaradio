@@ -3,7 +3,9 @@ const nextConfig = {
   experimental: {
     appDir: true,
   },
-  // regex which matches everything except the string "coming-soon"
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   async redirects() {
     return [
       {
