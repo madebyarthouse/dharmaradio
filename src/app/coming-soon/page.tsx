@@ -2,6 +2,8 @@ import Heading from "../ui/heading";
 import Sounds from "./sounds";
 import Balancer from "react-wrap-balancer";
 
+export const revalidate = 60; // 1 minute
+
 const quotes = [
   {
     text: "What we make of our life—the sum total of thoughts, emotions, words, and actions that fill the brief interval between birth and death—is our one great creative masterpiece. The beauty and significance of a life well lived consists not in the works we leave behind, or in what history has to say about us. It comes from the quality of conscious experience that infuses our every waking moment, and from the impact we have on others.",
@@ -26,6 +28,50 @@ const quotes = [
   {
     text: "The mind is its own place, and in itself can make a Heaven of Hell, a Hell of Heaven.",
     source: "John Milton, Paradise Lost",
+  },
+  {
+    text: "For things to reveal themselves to us, we need to be ready to abandon our views about them.",
+    source: "Thich Nhat Hanh, Being Peace",
+  },
+  {
+    text: "Walk as if you are kissing the Earth with your feet.",
+    source: "Thich Nhat Hanh, Peace is Every Step",
+  },
+  {
+    text: "It is truth that liberates, not your effort to be free.",
+    source: "Jiddu Krishnamurti, The First and Last Freedom",
+  },
+  {
+    text: "Five decades ago, some very kind people in Japan slipped me the secret: you can dramatically extend life – not by multiplying the number of your years, but by expanding the fullness of your moments.",
+    source: "Shinzen Young, The Science of Enlightenment",
+  },
+  {
+    text: "Anything you avoid in life will come back, over and over again, until you’re willing to face it—to look deeply into its true nature.",
+    source: "Adyashanti, The End of Your World",
+  },
+  {
+    text: "To see a World in a Grain of Sand<br/>And a Heaven in a Wild Flower,<br/>Hold Infinity in the palm of your hand<br/>And Eternity in an hour.",
+    source: "William Blake",
+  },
+  {
+    text: "He who binds to himself a joy<br/>Does the winged life destroy;<br/>But he who kisses the joy as it flies<br/>Lives in eternity's sun rise.",
+    source: "William Blake",
+  },
+  {
+    text: "Taste this, and be henceforth among the gods<br/>Thyself a goddess, not to Earth confined",
+    source: "John Milton, Paradise Lost",
+  },
+  {
+    text: "You are not a drop in the ocean. You are the entire ocean in a drop",
+    source: "Rumi",
+  },
+  {
+    text: "Life shrinks or expands in proportion to one’s courage.",
+    source: "Anais Nin",
+  },
+  {
+    text: "Enlightenment is when a wave realizes it is the ocean.",
+    source: "Thich Nhat Hanh",
   },
 ];
 
