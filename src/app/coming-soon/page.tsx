@@ -103,7 +103,7 @@ export default async function Home() {
           <Heading level="h1">Dharma Radio</Heading>
           <Heading level="h3">Coming Soon!</Heading>
         </div>
-        <p className="w-full md:w-[40ch] text-center">
+        <p className="w-full mt-5 md:w-[40ch] text-center">
           Dharma Radio is a web application which makes the dharma talks from{" "}
           <a
             target="_blank"

@@ -9,7 +9,8 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: "/:path((?!coming-soon|sounds|js|api).*)",
+        source:
+          "/:path((?!coming-soon|sounds|js|api|favicon|manifest.json|icons|browserconfig).*)",
         destination: "/coming-soon",
         permanent: false,
       },
