@@ -1,8 +1,28 @@
 import Heading from "../ui/heading";
 import Sounds from "./sounds";
 import Balancer from "react-wrap-balancer";
+import { Metadata } from "next";
 
 export const revalidate = 60; // 1 minute
+
+export const metadata: Metadata = {
+  title: "Dharma Radio",
+  description: "A web player for all talks from dharmaseed.org",
+  openGraph: {
+    title: {
+      absolute: "Dharma Radio",
+    },
+    description: "A web player for all talks from dharmaseed.org",
+    images: [
+      {
+        url: "https://dharmarad.io/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Dharma Radio",
+      },
+    ],
+  },
+};
 
 const quotes = [
   {
