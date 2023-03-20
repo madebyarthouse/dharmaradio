@@ -26,7 +26,9 @@ export default function RootLayout({
         <head /> will contain the components returned by the nearest parent
         head.tsx. Find out more at https://beta.nextjs.org/docs/api-reference/file-conventions/head
       */}
-      <head />
+      <head>
+        <script defer data-domain="dharmarad.io" src="/js/script.js"></script>
+      </head>
       <body className={`${playfairDisplay.variable} ${inter.variable}`}>
         {children}
       </body>
