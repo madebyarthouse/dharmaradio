@@ -20,7 +20,7 @@ const nextConfig = {
     return [
       {
         source: "/js/script.js",
-        destination: "https://plausible.io/js/script.js",
+        destination: "https://plausible.io/js/script.outbound-links.js",
       },
       {
         source: "/api/event", // Or '/api/event/' if you have `trailingSlash: true` in this config
