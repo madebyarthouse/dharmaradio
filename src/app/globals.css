@@ -17,11 +17,15 @@
   }
 
   .landing-bg {
-    background: radial-gradient(50% 50% at 50% 50%, #FFFFFF 0%, #FFFFFF 0%, rgba(82, 117, 85, 0) 0.01%, rgba(82, 117, 85, 0.1) 100%), #FFFFFF;
+    background: radial-gradient(50% 50% at 50% 50%, #FFFFFF 0%, #FFFFFF 0%, rgba(82, 117, 85, 0) 0.01%, rgba(82, 117, 85, 0.26) 100%), #FFFFFF;
   }
 
   .breath-circle {
     animation: breath-circle 4s ease-in-out 500ms infinite alternate;
+  }
+
+  .expanding-line {
+    animation: expanding-line 1s ease-in-out 500ms forwards;
   }
 }
 
@@ -33,6 +37,16 @@
 
     100% {
       transform: scale(1);
+    }
+  }
+
+  @keyframes expanding-line {
+    0% {
+      width: 0;
+    }
+
+    100% {
+      width: 100%;
     }
   }
 }

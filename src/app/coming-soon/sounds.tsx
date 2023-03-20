@@ -28,7 +28,7 @@ export default function Sounds() {
 
   return (
     <>
-      <ul className="rounded-lg border-brand border flex flex-row">
+      <ul className="rounded-lg border-brand border flex flex-row text-sm">
         {sounds.map((sound, index) => (
           <li key={sound.label} className="group">
             <button
@@ -37,7 +37,7 @@ export default function Sounds() {
                 setActive(sounds[index]);
               }}
               className={clsx(
-                "appearance-none bg-transparent rounded-md hover:bg-brand-light active:bg-brand-light hover:text-white active:text-white transition-colors text-center px-4 py-2  relative group",
+                "appearance-none bg-transparent rounded-md hover:bg-brand-light hover:text-white transition-colors text-center px-4 py-2  relative group",
                 active.label === sound.label ? "text-white" : "text-brand"
               )}
             >
@@ -55,9 +55,7 @@ export default function Sounds() {
         ))}
       </ul>
 
-      {active.src && (
-        <audio autoPlay loop src={active.src} className="hidden" />
-      )}
+      {active.src && <audio autoPlay loop src={active.src} />}
     </>
   );
 }
