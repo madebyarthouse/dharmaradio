@@ -27,7 +27,7 @@ export default function RootLayout({
         head.tsx. Find out more at https://beta.nextjs.org/docs/api-reference/file-conventions/head
       */}
       <head>
-        <script defer data-domain="dharmarad.io" src="/js/script.js"></script>
+        <script defer data-domain="dharmarad.io" src="/js/script.js" />
       </head>
       <body className={`${playfairDisplay.variable} ${inter.variable}`}>
         {children}

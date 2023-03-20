@@ -16,6 +16,10 @@
     color: var(--color-white);
   }
 
+  body {
+    background: radial-gradient(50% 50% at 50% 50%, #FFFFFF 0%, #FFFFFF 0%, rgba(82, 117, 85, 0) 0.01%, rgba(82, 117, 85, 0.26) 100%), #FFFFFF;
+  }
+
   .landing-bg {
     background: radial-gradient(50% 50% at 50% 50%, #FFFFFF 0%, #FFFFFF 0%, rgba(82, 117, 85, 0) 0.01%, rgba(82, 117, 85, 0.26) 100%), #FFFFFF;
   }
