@@ -117,7 +117,7 @@ export default async function Home() {
             more accesible.
           </p>
 
-          <hr className="expanding-line h-[1px] bg-brand transition-all mt-5" />
+          <hr className="expanding-line h-[1px] max-w-full bg-brand transition-all mt-5" />
         </header>
 
         <footer className="max-w-full w-[65ch] mx-auto flex flex-col items-center justify-center">
