@@ -113,7 +113,7 @@ export default async function Home() {
           >
             Dharma Seed
           </a>{" "}
-          more accesible.
+          more accessible.
         </p>
 
         <hr className="expanding-line h-[1px] max-w-full bg-brand transition-all mt-5" />
