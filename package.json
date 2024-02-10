@@ -9,13 +9,22 @@
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "wrangler pages dev --compatibility-date=2023-06-21 ./public",
     "typecheck": "tsc",
-    "pages:deploy": "npm run build && wrangler pages deploy ./public"
+    "format": "prettier --write .",
+    "pages:deploy": "npm run build && wrangler pages deploy ./public",
+    "migrations:gen": "drizzle-kit generate:sqlite",
+    "migrations:up": "drizzle-kit up:sqlite",
+    "local:migrations:apply": "wrangler d1 migrations apply blog --local",
+    "local:d1:init": "npm run local:migrations:apply && wrangler d1 execute blog --file='./fixtures/data.sql' --local",
+    "migrations:apply": "wrangler d1 migrations apply blog",
+    "d1:new": "wrangler d1 create blog",
+    "d1:init": "npm run migrations:apply && wrangler d1 execute blog --file='./fixtures/data.sql'"
   },
   "dependencies": {
     "@remix-run/cloudflare": "^2.6.0",
     "@remix-run/cloudflare-pages": "^2.6.0",
     "@remix-run/css-bundle": "^2.6.0",
     "@remix-run/react": "^2.6.0",
+    "drizzle-orm": "^0.29.3",
     "isbot": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
@@ -26,6 +35,7 @@
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
+    "drizzle-kit": "^0.20.14",
     "eslint": "^8.38.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.28.1",
