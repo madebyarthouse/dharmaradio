@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
 import {
   sqliteTable,
   text,
@@ -24,7 +24,7 @@ export const teachers = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (teachers) => ({
-    slugIdx: uniqueIndex("slugIdx").on(teachers.slug),
+    teachersSlugIdx: uniqueIndex("teachersSlugIdx").on(teachers.slug),
     nameIdx: uniqueIndex("dharmaSeedIdx").on(teachers.dharmaSeedId),
   })
 );
@@ -56,7 +56,7 @@ export const talks = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (talks) => ({
-    slugIdx: uniqueIndex("slugIdx").on(talks.slug),
+    talksSlugIdx: uniqueIndex("talksSlugIdx").on(talks.slug),
     teacherIdx: uniqueIndex("teacherIdx").on(talks.teacherId),
   })
 );
@@ -77,8 +77,8 @@ export const centers = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (centers) => ({
-    slugIdx: uniqueIndex("slugIdx").on(centers.slug),
-    nameIdx: uniqueIndex("dharmaSeedIdx").on(centers.name),
+    centersSlugIdx: uniqueIndex("centersSlugIdx").on(centers.slug),
+    centersNameIdx: uniqueIndex("centersDharmaSeedIdx").on(centers.name),
     dharmaSeedSubdomainIdx: uniqueIndex("dharmaSeedSubdomainIdx").on(
       centers.dharmaSeedSubdomain
     ),
@@ -103,7 +103,36 @@ export const retreats = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (retreats) => ({
-    slugIdx: uniqueIndex("slugIdx").on(retreats.slug),
-    dharmaSeedId: uniqueIndex("dharmaSeedId").on(retreats.dharmaSeedId),
+    retreatsSlugIdx: uniqueIndex("retreatsSlugIdx").on(retreats.slug),
+    retreatsDharmaSeedId: uniqueIndex("retreatsDharmaSeedId").on(
+      retreats.dharmaSeedId
+    ),
   })
 );
+
+export const teachersRelations = relations(teachers, ({ many }) => ({
+  talks: many(talks),
+}));
+
+export const centersRelations = relations(centers, ({ many }) => ({
+  talks: many(talks),
+}));
+
+export const retreatsRelations = relations(retreats, ({ many }) => ({
+  talks: many(talks),
+}));
+
+export const talksRelations = relations(talks, ({ one }) => ({
+  teacher: one(teachers, {
+    fields: [talks.teacherId],
+    references: [teachers.id],
+  }),
+  center: one(centers, {
+    fields: [talks.centerId],
+    references: [centers.id],
+  }),
+  retreat: one(retreats, {
+    fields: [talks.retreatId],
+    references: [retreats.id],
+  }),
+}));

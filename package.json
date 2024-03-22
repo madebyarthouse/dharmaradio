@@ -20,10 +20,12 @@
     "d1:init": "npm run migrations:apply && wrangler d1 execute blog --file='./fixtures/data.sql'"
   },
   "dependencies": {
-    "@remix-run/cloudflare": "^2.6.0",
+    "@libsql/client": "^0.5.6",
+    "@remix-run/cloudflare": "^2.8.1",
     "@remix-run/cloudflare-pages": "^2.6.0",
     "@remix-run/css-bundle": "^2.6.0",
     "@remix-run/react": "^2.6.0",
+    "dotenv": "^16.4.5",
     "drizzle-orm": "^0.29.3",
     "isbot": "^4.1.0",
     "react": "^18.2.0",
