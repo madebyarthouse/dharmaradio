@@ -10,6 +10,7 @@ import {
 import { Navbar } from "~/components/Navbar";
 import { Player } from "~/components/Player";
 import tailwind from "~/app.css?url";
+import { AudioProvider } from "~/contexts/audio-context";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: tailwind },
@@ -25,17 +26,19 @@ export default function App() {
         <Links />
       </head>
       <body className="h-full bg-sage-50">
-        <div className="min-h-full flex flex-col">
-          <div className="sticky top-0 z-50 bg-sage-50/95 backdrop-blur-sm border-b border-sage-200">
-            <Navbar />
+        <AudioProvider>
+          <div className="min-h-full flex flex-col">
+            <div className="sticky top-0 z-50 bg-sage-50/95 backdrop-blur-sm border-b border-sage-200">
+              <Navbar />
+            </div>
+            <main className="flex-1 px-4 py-8 overflow-auto">
+              <Outlet />
+            </main>
+            <div className="sticky bottom-0 z-50">
+              <Player />
+            </div>
           </div>
-          <main className="flex-1 px-4 py-8 overflow-auto">
-            <Outlet />
-          </main>
-          <div className="sticky bottom-0 z-50">
-            <Player />
-          </div>
-        </div>
+        </AudioProvider>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />

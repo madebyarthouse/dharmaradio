@@ -9,8 +9,6 @@ export function Pagination({
   totalPages,
   onPageChange,
 }: PaginationProps) {
-  if (totalPages <= 1) return null;
-
   return (
     <div className="mt-8 flex justify-center gap-2">
       {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
