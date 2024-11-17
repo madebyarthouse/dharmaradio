@@ -84,7 +84,7 @@ export async function fetchTalksFromDharmaseed(
       const existingCount = scrapedTalks.length - newTalks.length;
       totalExisting += existingCount;
 
-      if (skipProcessing) {
+      if (skipProcessing && newTalks.length === 0) {
         totalSkipped += newTalks.length;
         logger.info("Skipping processing", {
           page,

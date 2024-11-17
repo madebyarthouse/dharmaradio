@@ -5,13 +5,12 @@ import { Search } from "lucide-react";
 import { CenterCard } from "~/components/center-card";
 import { db } from "~/db/client.server";
 import { centers } from "~/db/schema";
-import { Env } from "~/types";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const search = url.searchParams.get("q") || "";
 
-  const results = await db((context.env as Env).DB).query.centers.findMany({
+  const results = await db(context.cloudflare.env.DB).query.centers.findMany({
     where: search ? like(centers.name, `%${search}%`) : undefined,
     orderBy: (centers, { desc }) => [desc(centers.name)],
     limit: 50,

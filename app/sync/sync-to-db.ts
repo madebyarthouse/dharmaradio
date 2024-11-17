@@ -6,7 +6,6 @@ import { fetchTeacherFromDharmaseed } from "./lib/fetch-teacher";
 import { slugify, sumTime, dharmaSeedBase } from "./lib/utils";
 import { sql, eq } from "drizzle-orm";
 import { Logger } from "./lib/logger";
-import { processBatch } from "./lib/batch";
 import { withRetry } from "./lib/retry";
 import type { ScrapedTalk } from "./lib/types";
 
@@ -298,13 +297,46 @@ async function processTalk(scrapedTalk: ScrapedTalk, ctx: ProcessTalkContext) {
       title: scrapedTalk.title,
     });
 
-    const teacher = await upsertTeacher(scrapedTalk, ctx);
-    if (!teacher) {
-      throw new Error(`Failed to get teacher for talk: ${scrapedTalk.title}`);
+    let teacher, center, retreat;
+
+    try {
+      teacher = await upsertTeacher(scrapedTalk, ctx);
+    } catch (error) {
+      logger.error("Failed to process teacher", error as Error, {
+        talkId: scrapedTalk.talkId,
+        teacher: scrapedTalk.teacher,
+      });
+      // Continue without teacher - this talk will be skipped
+      return;
     }
 
-    const center = await processCenter(scrapedTalk, ctx);
-    const retreat = await processRetreat(scrapedTalk, ctx);
+    if (!teacher) {
+      logger.warn("No teacher found for talk, skipping", {
+        talkId: scrapedTalk.talkId,
+        title: scrapedTalk.title,
+      });
+      return;
+    }
+
+    try {
+      center = await processCenter(scrapedTalk, ctx);
+    } catch (error) {
+      logger.error("Failed to process center", error as Error, {
+        talkId: scrapedTalk.talkId,
+        center: scrapedTalk.center,
+      });
+      // Continue without center
+    }
+
+    try {
+      retreat = await processRetreat(scrapedTalk, ctx);
+    } catch (error) {
+      logger.error("Failed to process retreat", error as Error, {
+        talkId: scrapedTalk.talkId,
+        retreat: scrapedTalk.retreat,
+      });
+      // Continue without retreat
+    }
 
     const audioUrl = scrapedTalk.audioUrl?.startsWith("http")
       ? scrapedTalk.audioUrl
@@ -346,7 +378,14 @@ async function processTalk(scrapedTalk: ScrapedTalk, ctx: ProcessTalkContext) {
         centerId: center?.id,
         retreatId: retreat?.id,
       });
+
+      stats.talks.processed++;
     } catch (error) {
+      stats.talks.failed.push({
+        id: scrapedTalk.talkId,
+        title: scrapedTalk.title,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       logger.error("Failed to upsert talk", error as Error, {
         talk: {
           id: scrapedTalk.talkId,
@@ -356,10 +395,7 @@ async function processTalk(scrapedTalk: ScrapedTalk, ctx: ProcessTalkContext) {
         center,
         retreat,
       });
-      throw error;
     }
-
-    stats.talks.processed++;
   } catch (error) {
     stats.talks.failed.push({
       id: scrapedTalk.talkId,
@@ -369,9 +405,24 @@ async function processTalk(scrapedTalk: ScrapedTalk, ctx: ProcessTalkContext) {
     logger.error("Failed to process talk", error as Error, {
       talkId: scrapedTalk.talkId,
       title: scrapedTalk.title,
-      error: error instanceof Error ? error.message : "Unknown error",
     });
-    throw error;
+    // Don't throw, just continue with next talk
+  }
+}
+
+// Modify processBatch to handle errors per item
+async function processBatch<T>(
+  items: T[],
+  processor: (item: T) => Promise<void>,
+  options: { batchSize: number }
+) {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += options.batchSize) {
+    chunks.push(items.slice(i, i + options.batchSize));
+  }
+
+  for (const chunk of chunks) {
+    await Promise.allSettled(chunk.map(processor));
   }
 }
 
@@ -393,14 +444,13 @@ export const syncTalks = async (
           batchSize: 10,
         });
       },
-      undefined, // maxPages
+      undefined,
       skipProcessing
     );
 
-    logger.info("Sync completed successfully");
+    logger.info("Sync completed");
   } catch (error) {
-    logger.error("Sync failed", error as Error);
-    throw error;
+    logger.error("Sync encountered errors but completed", error as Error);
   } finally {
     const duration = Date.now() - startTime;
     const minutes = Math.floor(duration / 60000);

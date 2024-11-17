@@ -6,7 +6,6 @@ import { db } from "~/db/client.server";
 import { talks } from "~/db/schema";
 import { eq } from "drizzle-orm";
 import { useState } from "react";
-import { Env } from "~/types";
 
 export async function loader({ params, context }: LoaderFunctionArgs) {
   const { slug } = params;
@@ -15,7 +14,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     throw new Error("Talk slug is required");
   }
 
-  const database = db((context.env as Env).DB);
+  const database = db(context.cloudflare.env.DB);
 
   const talk = await database.query.talks.findFirst({
     where: eq(talks.slug, slug),

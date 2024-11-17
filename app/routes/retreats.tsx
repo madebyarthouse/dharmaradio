@@ -5,13 +5,12 @@ import { Search, Filter } from "lucide-react";
 import { RetreatCard } from "~/components/retreat-card";
 import { db } from "~/db/client.server";
 import { retreats } from "~/db/schema";
-import { Env } from "~/types";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const search = url.searchParams.get("q") || "";
 
-  const results = await db((context.env as Env).DB).query.retreats.findMany({
+  const results = await db(context.cloudflare.env.DB).query.retreats.findMany({
     where: search ? like(retreats.title, `%${search}%`) : undefined,
     limit: 50,
     with: {

@@ -6,7 +6,6 @@ import { Globe, Heart, ExternalLink } from "lucide-react";
 import { TalkCard } from "~/components/talk-card";
 import { db } from "~/db/client.server";
 import { teachers } from "~/db/schema";
-import { Env } from "~/types";
 
 export async function loader({ params, context }: LoaderFunctionArgs) {
   const { slug } = params;
@@ -15,7 +14,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     throw new Error("Teacher slug is required");
   }
 
-  const teacher = await db((context.env as Env).DB).query.teachers.findFirst({
+  const teacher = await db(context.cloudflare.env.DB).query.teachers.findFirst({
     where: eq(teachers.slug, slug),
     with: {
       talks: {

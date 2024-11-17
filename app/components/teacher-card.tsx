@@ -1,4 +1,5 @@
 import { Link } from "@remix-run/react";
+import { Image } from "./ui/Image";
 
 type TeacherCardProps = {
   slug: string;
@@ -19,7 +20,7 @@ export function TeacherCard({
       className="bg-white/60 backdrop-blur rounded-xl p-6 shadow-sm hover:shadow-md transition-all group"
     >
       <div className="flex items-center space-x-4">
-        <img
+        <Image
           src={profileImageUrl || ""}
           alt={name}
           className="w-16 h-16 rounded-full object-cover ring-2 ring-sage-100 group-hover:ring-sage-200 transition-all"

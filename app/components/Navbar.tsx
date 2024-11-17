@@ -11,7 +11,7 @@ export function Navbar() {
   ] as const;
 
   return (
-    <nav className="bg-white/80 backdrop-blur-lg border-b border-sage-200">
+    <nav className="">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">

@@ -5,13 +5,12 @@ import { TalkCard } from "~/components/talk-card";
 import { db } from "~/db/client.server";
 import { talks } from "~/db/schema";
 import { like } from "drizzle-orm";
-import { Env } from "~/types";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const search = url.searchParams.get("q") || "";
 
-  const results = await db((context.env as Env).DB).query.talks.findMany({
+  const results = await db(context.cloudflare.env.DB).query.talks.findMany({
     where: search ? like(talks.title, `%${search}%`) : undefined,
     orderBy: (talks, { desc }) => [desc(talks.publicationDate)],
     limit: 50,
