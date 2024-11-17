@@ -5,7 +5,12 @@ node_modules
 /functions/\[\[path\]\].js.map
 /functions/metafile.*
 /functions/version.txt
-/public/build
 .dev.vars
 .wrangler
 app/.DS_Store
+
+public
+build
+.cache
+functions
+.wrangler
