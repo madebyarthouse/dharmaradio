@@ -7,3 +7,5 @@ node_modules
 /functions/version.txt
 /public/build
 .dev.vars
+.wrangler
+app/.DS_Store
