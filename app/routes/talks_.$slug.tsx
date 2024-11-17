@@ -1,11 +1,12 @@
 import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
+import { eq } from "drizzle-orm";
 import { motion } from "framer-motion";
 import { Calendar, Clock, Building, Play, Pause } from "lucide-react";
 import { db } from "~/db/client.server";
 import { talks } from "~/db/schema";
-import { eq } from "drizzle-orm";
 import { useState } from "react";
+import { Link } from "@remix-run/react";
 
 export async function loader({ params, context }: LoaderFunctionArgs) {
   const { slug } = params;
@@ -14,24 +15,29 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     throw new Error("Talk slug is required");
   }
 
-  const database = db(context.cloudflare.env.DB);
-
-  const talk = await database.query.talks.findFirst({
+  const talk = await db(context.cloudflare.env.DB).query.talks.findFirst({
     where: eq(talks.slug, slug),
     with: {
       teacher: {
         columns: {
           name: true,
+          slug: true,
+          profileImageUrl: true,
+          description: true,
         },
       },
       center: {
         columns: {
           name: true,
+          slug: true,
+          description: true,
         },
       },
       retreat: {
         columns: {
           title: true,
+          slug: true,
+          description: true,
         },
       },
     },
@@ -55,32 +61,8 @@ export default function TalkDetail() {
         animate={{ opacity: 1 }}
         className="bg-white/60 backdrop-blur rounded-xl p-8 shadow-sm mb-8"
       >
-        <div className="flex items-start space-x-8">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="relative group"
-          >
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="absolute inset-0 flex items-center justify-center bg-sage-900/0 group-hover:bg-sage-900/20 rounded-lg transition-colors"
-            >
-              {isPlaying ? (
-                <Pause
-                  className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  size={48}
-                />
-              ) : (
-                <Play
-                  className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  size={48}
-                />
-              )}
-            </button>
-          </motion.div>
-
-          <div className="flex-1">
+        <div className="flex flex-col gap-6">
+          <div>
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -108,10 +90,6 @@ export default function TalkDetail() {
                   {String(talk.duration % 60).padStart(2, "0")}
                 </span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Building size={16} />
-                <span>{talk.center?.name}</span>
-              </div>
             </motion.div>
 
             <motion.p
@@ -123,6 +101,57 @@ export default function TalkDetail() {
               {talk.description}
             </motion.p>
           </div>
+
+          {talk.teacher && (
+            <Link
+              to={`/teachers/${talk.teacher.slug}`}
+              className="flex items-center gap-4 p-4 rounded-lg bg-white/40 hover:bg-white/60 transition-colors"
+            >
+              {talk.teacher.profileImageUrl && (
+                <img
+                  src={talk.teacher.profileImageUrl}
+                  alt={talk.teacher.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              )}
+              <div>
+                <h3 className="font-medium text-sage-900">
+                  {talk.teacher.name}
+                </h3>
+                <p className="text-sm text-sage-600 line-clamp-1">
+                  {talk.teacher.description}
+                </p>
+              </div>
+            </Link>
+          )}
+
+          {talk.retreat && (
+            <Link
+              to={`/retreats/${talk.retreat.slug}`}
+              className="p-4 rounded-lg bg-white/40 hover:bg-white/60 transition-colors"
+            >
+              <h3 className="font-medium text-sage-900 mb-1">
+                From retreat: {talk.retreat.title}
+              </h3>
+              <p className="text-sm text-sage-600 line-clamp-2">
+                {talk.retreat.description}
+              </p>
+            </Link>
+          )}
+
+          {talk.center && (
+            <Link
+              to={`/centers/${talk.center.slug}`}
+              className="p-4 rounded-lg bg-white/40 hover:bg-white/60 transition-colors"
+            >
+              <h3 className="font-medium text-sage-900 mb-1">
+                At {talk.center.name}
+              </h3>
+              <p className="text-sm text-sage-600 line-clamp-2">
+                {talk.center.description}
+              </p>
+            </Link>
+          )}
         </div>
       </motion.div>
     </div>

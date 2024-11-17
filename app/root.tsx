@@ -26,11 +26,15 @@ export default function App() {
       </head>
       <body className="h-full bg-sage-50">
         <div className="min-h-full flex flex-col">
-          <Navbar />
-          <main className="flex-1 px-4 py-8">
+          <div className="sticky top-0 z-50 bg-sage-50/95 backdrop-blur-sm border-b border-sage-200">
+            <Navbar />
+          </div>
+          <main className="flex-1 px-4 py-8 overflow-auto">
             <Outlet />
           </main>
-          <Player />
+          <div className="sticky bottom-0 z-50">
+            <Player />
+          </div>
         </div>
         <ScrollRestoration />
         <Scripts />
