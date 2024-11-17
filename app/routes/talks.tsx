@@ -1,76 +1,153 @@
 import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { useLoaderData, useSearchParams } from "@remix-run/react";
-import { Search, Filter } from "lucide-react";
+import { useLoaderData } from "@remix-run/react";
+import { eq, like, sql } from "drizzle-orm";
+import { SearchInput } from "~/components/ui/search-input";
+import { SortButton } from "~/components/ui/sort-button";
+import { Pagination } from "~/components/ui/pagination";
 import { TalkCard } from "~/components/talk-card";
 import { db } from "~/db/client.server";
-import { talks } from "~/db/schema";
-import { like } from "drizzle-orm";
+import { talks, teachers, centers, retreats } from "~/db/schema";
+import { Suspense } from "react";
+import { withPagination } from "~/utils/pagination.server";
+import { useSearchWithDebounce, useSort } from "~/utils/search-params";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  const search = url.searchParams.get("q") || "";
+  const searchQuery = url.searchParams.get("q") || "";
+  const page = parseInt(url.searchParams.get("page") || "1");
+  const sortField = url.searchParams.get("sort") || "date";
+  const sortOrder = (url.searchParams.get("order") || "desc") as "asc" | "desc";
 
-  const results = await db(context.cloudflare.env.DB).query.talks.findMany({
-    where: search ? like(talks.title, `%${search}%`) : undefined,
-    orderBy: (talks, { desc }) => [desc(talks.publicationDate)],
-    limit: 50,
-    with: {
+  const database = db(context.cloudflare.env.DB);
+
+  const query = database
+    .select({
+      id: talks.id,
+      title: talks.title,
+      slug: talks.slug,
+      duration: talks.duration,
+      audioUrl: talks.audioUrl,
+      publicationDate: talks.publicationDate,
       teacher: {
-        columns: {
-          name: true,
-        },
+        name: teachers.name,
+        slug: teachers.slug,
       },
       center: {
-        columns: {
-          name: true,
-        },
+        name: centers.name,
+        slug: centers.slug,
       },
       retreat: {
-        columns: {
-          title: true,
-        },
+        title: retreats.title,
+        slug: retreats.slug,
       },
-    },
-  });
+    })
+    .from(talks)
+    .leftJoin(teachers, eq(talks.teacherId, teachers.id))
+    .leftJoin(centers, eq(talks.centerId, centers.id))
+    .leftJoin(retreats, eq(talks.retreatId, retreats.id))
+    .where(
+      searchQuery.length >= 2
+        ? like(talks.title, `%${searchQuery}%`)
+        : undefined
+    )
+    .orderBy(
+      sortField === "title"
+        ? sortOrder === "asc"
+          ? sql`${talks.title} asc`
+          : sql`${talks.title} desc`
+        : sortField === "duration"
+        ? sortOrder === "asc"
+          ? sql`${talks.duration} asc`
+          : sql`${talks.duration} desc`
+        : sortOrder === "asc"
+        ? sql`${talks.publicationDate} asc`
+        : sql`${talks.publicationDate} desc`
+    );
 
-  return { talks: results };
+  return withPagination({
+    query: query.$dynamic(),
+    params: { page, perPage: 20 },
+  });
 }
 
 export default function Talks() {
-  const { talks } = useLoaderData<typeof loader>();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const search = searchParams.get("q") || "";
+  const { items: talks, pagination } = useLoaderData<typeof loader>();
+  const { searchTerm, setSearchTerm, setSearchParams } =
+    useSearchWithDebounce();
+  const { sort, order, updateSort } = useSort<"date" | "title" | "duration">(
+    "date"
+  );
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-serif">Talks</h1>
-        <div className="flex space-x-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search talks..."
-              value={search}
-              onChange={(e) => setSearchParams({ q: e.target.value })}
-              className="pl-10 pr-4 py-2 rounded-lg bg-white/60 backdrop-blur border border-sage-200 focus:border-sage-400 focus:ring focus:ring-sage-200 focus:ring-opacity-50 transition-all"
-            />
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-sage-400"
-              size={18}
-            />
-          </div>
-          <button className="px-4 py-2 rounded-lg bg-white/60 backdrop-blur border border-sage-200 hover:border-sage-400 transition-colors flex items-center space-x-2">
-            <Filter size={18} />
-            <span>Filter</span>
-          </button>
-        </div>
+        <h1 className="text-3xl font-serif">Dharma Talks</h1>
+        <SearchInput
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Search talks..."
+        />
       </div>
 
-      <div className="grid gap-4">
-        {talks.map((talk) => (
-          <TalkCard key={talk.slug} {...talk} />
-        ))}
+      <div className="mb-4 flex gap-2">
+        <SortButton
+          label="Date"
+          active={sort === "date"}
+          ascending={order === "asc"}
+          onClick={() => updateSort("date")}
+        />
+        <SortButton
+          label="Title"
+          active={sort === "title"}
+          ascending={order === "asc"}
+          onClick={() => updateSort("title")}
+        />
+        <SortButton
+          label="Duration"
+          active={sort === "duration"}
+          ascending={order === "asc"}
+          onClick={() => updateSort("duration")}
+        />
       </div>
+
+      <Suspense
+        fallback={
+          <div className="flex justify-center py-8">
+            <div className="animate-pulse">Loading...</div>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          {talks.map((talk) => (
+            <TalkCard
+              key={talk.slug}
+              id={String(talk.id)}
+              slug={talk.slug}
+              title={talk.title}
+              duration={talk.duration}
+              audioUrl={talk.audioUrl}
+              teacherName={talk.teacher?.name ?? null}
+              teacherSlug={talk.teacher?.slug ?? null}
+              centerName={talk.center?.name ?? null}
+              centerSlug={talk.center?.slug ?? null}
+              retreatTitle={talk.retreat?.title ?? null}
+              retreatSlug={talk.retreat?.slug ?? null}
+            />
+          ))}
+        </div>
+      </Suspense>
+
+      <Pagination
+        currentPage={pagination.current}
+        totalPages={pagination.pages}
+        onPageChange={(page) =>
+          setSearchParams((prev) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set("page", page.toString());
+            return newParams;
+          })
+        }
+      />
     </div>
   );
 }
