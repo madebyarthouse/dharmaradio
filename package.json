@@ -29,6 +29,7 @@
     "framer-motion": "^11.11.17",
     "isbot": "^4.4.0",
     "jsdom": "^25.0.1",
+    "just-debounce-it": "^3.2.0",
     "linkedom": "^0.18.5",
     "lucide-react": "^0.460.0",
     "prettier-plugin-tailwindcss": "^0.6.8",

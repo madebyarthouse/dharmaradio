@@ -4,25 +4,27 @@ import { Play, Clock } from "lucide-react";
 type TalkCardProps = {
   slug: string;
   title: string;
-  teacher: {
-    name: string;
-  };
+  description: string | null;
   duration: number;
-  center: {
-    name: string;
-  } | null;
-  retreat: {
-    title: string;
-  } | null;
+  teacherName: string | null;
+  teacherSlug: string | null;
+  centerName?: string | null;
+  centerSlug?: string | null;
+  retreatTitle?: string | null;
+  retreatSlug?: string | null;
 };
 
 export function TalkCard({
   slug,
   title,
-  teacher,
+  description,
   duration,
-  center,
-  retreat,
+  teacherName,
+  teacherSlug,
+  centerName,
+  centerSlug,
+  retreatTitle,
+  retreatSlug,
 }: TalkCardProps) {
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -44,14 +46,35 @@ export function TalkCard({
           <h3 className="font-medium text-sage-900 group-hover:text-sage-700 transition-colors">
             {title}
           </h3>
-          <p className="text-sage-600 text-sm">{teacher.name}</p>
+          <Link
+            to={`/teachers/${teacherSlug}`}
+            className="text-sage-600 text-sm hover:text-sage-900 transition-colors"
+          >
+            {teacherName}
+          </Link>
           <div className="flex items-center space-x-2 mt-1 text-xs text-sage-500">
             <Clock size={12} />
             <span>{formatDuration(duration)}</span>
-            <span>•</span>
-            <span>{center?.name}</span>
-            <span>•</span>
-            <span>{retreat?.title}</span>
+            {(centerName || retreatTitle) && <span>•</span>}
+            {centerName && centerSlug && (
+              <Link
+                to={`/centers/${centerSlug}`}
+                className="hover:text-sage-900 transition-colors"
+              >
+                {centerName}
+              </Link>
+            )}
+            {retreatTitle && retreatSlug && (
+              <>
+                <span>•</span>
+                <Link
+                  to={`/retreats/${retreatSlug}`}
+                  className="hover:text-sage-900 transition-colors"
+                >
+                  {retreatTitle}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </Link>
