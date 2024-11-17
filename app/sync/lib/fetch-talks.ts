@@ -36,13 +36,16 @@ type ProcessPageCallback = (talks: ScrapedTalk[]) => Promise<void>;
 export async function fetchTalksFromDharmaseed(
   database: D1Database,
   processPage: ProcessPageCallback,
-  maxPages?: number
+  maxPages?: number,
+  skipProcessing = false
 ): Promise<void> {
   let page = 1;
   let shouldContinue = true;
   let totalProcessed = 0;
+  let totalSkipped = 0;
+  let totalExisting = 0;
 
-  logger.info("Starting fetch");
+  logger.info("Starting fetch", { skipProcessing });
 
   while (shouldContinue) {
     try {
@@ -66,6 +69,8 @@ export async function fetchTalksFromDharmaseed(
       logger.info(`Fetched page ${page}`, {
         scrapedTalks: scrapedTalks.length,
         totalProcessed,
+        totalSkipped,
+        totalExisting,
       });
 
       // No more talks to process
@@ -74,22 +79,39 @@ export async function fetchTalksFromDharmaseed(
         break;
       }
 
-      // Filter out existing talks
+      // Always filter to check what exists
       const newTalks = await filterNewTalks(database, scrapedTalks);
+      const existingCount = scrapedTalks.length - newTalks.length;
+      totalExisting += existingCount;
+
+      if (skipProcessing) {
+        totalSkipped += newTalks.length;
+        logger.info("Skipping processing", {
+          page,
+          newTalks: newTalks.length,
+          existing: existingCount,
+          totalSkipped,
+          totalExisting,
+        });
+      } else {
+        // Process only if not skipping
+        if (newTalks.length > 0) {
+          await processPage(newTalks);
+          totalProcessed += newTalks.length;
+        }
+      }
 
       // If no new talks are found, we can stop
-      if (newTalks.length === 0) {
+      if (newTalks.length === 0 && !skipProcessing) {
         logger.info("No new talks found, stopping fetch", {
           page,
           totalProcessed,
+          totalSkipped,
+          totalExisting,
         });
         shouldContinue = false;
         break;
       }
-
-      // Process the new talks
-      await processPage(newTalks);
-      totalProcessed += newTalks.length;
 
       // Check if we've reached the max pages limit
       if (maxPages && page >= maxPages) {
@@ -102,6 +124,8 @@ export async function fetchTalksFromDharmaseed(
     } catch (error) {
       logger.error(`Failed to process page ${page}`, error as Error, {
         totalProcessed,
+        totalSkipped,
+        totalExisting,
       });
       throw error;
     }
@@ -110,5 +134,8 @@ export async function fetchTalksFromDharmaseed(
   logger.info("Fetch completed", {
     totalPages: page,
     totalProcessed,
+    totalSkipped,
+    totalExisting,
+    skipProcessing,
   });
 }

@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   sqliteTable,
   text,
@@ -114,3 +114,30 @@ export const retreats = sqliteTable(
     ),
   })
 );
+
+export const centersRelations = relations(centers, ({ many }) => ({
+  talks: many(talks),
+}));
+
+export const teachersRelations = relations(teachers, ({ many }) => ({
+  talks: many(talks),
+}));
+
+export const retreatsRelations = relations(retreats, ({ many }) => ({
+  talks: many(talks),
+}));
+
+export const talksRelations = relations(talks, ({ one }) => ({
+  center: one(centers, {
+    fields: [talks.centerId],
+    references: [centers.id],
+  }),
+  retreat: one(retreats, {
+    fields: [talks.retreatId],
+    references: [retreats.id],
+  }),
+  teacher: one(teachers, {
+    fields: [talks.teacherId],
+    references: [teachers.id],
+  }),
+}));
