@@ -1,0 +1,20 @@
+{
+  "version": "5",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1731846973213,
+      "tag": "0000_salty_gabe_jones",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1731849221792,
+      "tag": "0001_complete_sentinels",
+      "breakpoints": true
+    }
+  ]
+}

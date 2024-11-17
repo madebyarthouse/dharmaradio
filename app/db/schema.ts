@@ -4,6 +4,7 @@ import {
   text,
   integer,
   uniqueIndex,
+  index,
 } from "drizzle-orm/sqlite-core";
 
 export const teachers = sqliteTable(
@@ -11,11 +12,13 @@ export const teachers = sqliteTable(
   {
     id: integer("id").primaryKey().notNull(),
     slug: text("slug").unique().notNull(),
-    name: text("name"),
+    name: text("name").notNull(),
     description: text("description"),
     profileImageUrl: text("profile_image_url"),
+    websiteUrl: text("website_url"),
+    donationUrl: text("donation_url"),
     dharmaSeedId: integer("dharma_seed_id").unique().notNull(),
-    createdAt: integer("created_at")
+    createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
     publishedOn: integer("published_on", { mode: "timestamp" }).notNull(),
@@ -24,8 +27,10 @@ export const teachers = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (teachers) => ({
-    slugIdx: uniqueIndex("slugIdx").on(teachers.slug),
-    nameIdx: uniqueIndex("dharmaSeedIdx").on(teachers.dharmaSeedId),
+    teacherSlugIdx: uniqueIndex("teacher_slug_idx").on(teachers.slug),
+    teacherDharmaSeedIdIdx: uniqueIndex("teacher_dharma_seed_id_idx").on(
+      teachers.dharmaSeedId
+    ),
   })
 );
 
@@ -56,8 +61,8 @@ export const talks = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (talks) => ({
-    slugIdx: uniqueIndex("slugIdx").on(talks.slug),
-    teacherIdx: uniqueIndex("teacherIdx").on(talks.teacherId),
+    talkSlugIdx: uniqueIndex("talk_slug_idx").on(talks.slug),
+    talkTeacherIdx: index("talk_teacher_idx").on(talks.teacherId),
   })
 );
 
@@ -77,11 +82,11 @@ export const centers = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (centers) => ({
-    slugIdx: uniqueIndex("slugIdx").on(centers.slug),
-    nameIdx: uniqueIndex("dharmaSeedIdx").on(centers.name),
-    dharmaSeedSubdomainIdx: uniqueIndex("dharmaSeedSubdomainIdx").on(
-      centers.dharmaSeedSubdomain
-    ),
+    centerSlugIdx: uniqueIndex("center_slug_idx").on(centers.slug),
+    centerNameIdx: uniqueIndex("center_name_idx").on(centers.name),
+    centerDharmaSeedSubdomainIdx: uniqueIndex(
+      "center_dharma_seed_subdomain_idx"
+    ).on(centers.dharmaSeedSubdomain),
   })
 );
 
@@ -103,7 +108,9 @@ export const retreats = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (retreats) => ({
-    slugIdx: uniqueIndex("slugIdx").on(retreats.slug),
-    dharmaSeedId: uniqueIndex("dharmaSeedId").on(retreats.dharmaSeedId),
+    retreatSlugIdx: uniqueIndex("retreat_slug_idx").on(retreats.slug),
+    retreatDharmaSeedIdIdx: uniqueIndex("retreat_dharma_seed_id_idx").on(
+      retreats.dharmaSeedId
+    ),
   })
 );

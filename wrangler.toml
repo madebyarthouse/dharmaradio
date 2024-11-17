@@ -1,0 +1,8 @@
+[triggers]
+crons = ["0 */6 * * *"] # Run every 6 hours 
+
+[[d1_databases]]
+binding = "DB" # available in your Worker as env.DB
+database_name = "dharmaradio-db"
+database_id = "a65a72b8-5014-47a2-b417-511942d13eae"
+migrations_dir="./app/db/migrations"
