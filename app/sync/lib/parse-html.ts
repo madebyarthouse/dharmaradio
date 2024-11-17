@@ -43,23 +43,39 @@ export const parseTalksFromHtml = (html: string): ScrapedTalk[] => {
     const centerText = linksRow?.textContent?.trim() ?? "";
     const links = linksRow?.querySelectorAll("a") ?? [];
 
-    // The first link is always the center
-    const centerLink = links[0];
-    const center = centerLink?.textContent?.trim() ?? null;
-    const centerUrl = centerLink?.getAttribute("href") ?? null;
+    const parsedLinks = Array.from(links).map((link) => ({
+      text: link.textContent?.trim() ?? null,
+      url: link.getAttribute("href") ?? null,
+    }));
+
+    const centerData = parsedLinks.find(
+      (link) => !link.url?.includes("retreats")
+    );
+    const retreatData = parsedLinks.find((link) =>
+      link.url?.includes("retreats")
+    );
+
+    const center = centerData?.text ?? null;
+    const centerUrl = centerData?.url ?? null;
     const centerSubdomain =
       centerUrl?.split(".")[0].replace("https://", "") ?? null;
 
-    // The retreat link might be wrapped in an <i> tag
-    const retreatLink = links[1];
-    const retreat =
-      retreatLink?.querySelector("i")?.textContent?.trim() ??
-      retreatLink?.textContent?.trim() ??
-      null;
-    const retreatUrl = retreatLink?.getAttribute("href") ?? null;
+    const retreat = retreatData?.text ?? null;
+    const retreatUrl = retreatData?.url ?? null;
     const retreatId = retreatUrl
       ? parseInt(retreatUrl.split("/retreats/").pop()?.replace("/", "") ?? "0")
       : null;
+
+    if (!retreatId) {
+      console.debug({
+        links: linksRow?.innerHTML,
+        retreat,
+        retreatUrl,
+        centerUrl,
+        title,
+        talkId,
+      });
+    }
 
     // Parse audio URL
     const audioUrl =

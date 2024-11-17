@@ -375,19 +375,27 @@ async function processTalk(scrapedTalk: ScrapedTalk, ctx: ProcessTalkContext) {
   }
 }
 
-export const syncTalks = async (database: D1Database) => {
+export const syncTalks = async (
+  database: D1Database,
+  skipProcessing = false
+) => {
   const drizzleDb = db(database);
   const ctx: ProcessTalkContext = { database, drizzleDb };
   const startTime = Date.now();
 
   try {
-    logger.info("Starting sync");
+    logger.info("Starting sync", { skipProcessing });
 
-    await fetchTalksFromDharmaseed(database, async (talks) => {
-      await processBatch(talks, (talk) => processTalk(talk, ctx), {
-        batchSize: 10,
-      });
-    });
+    await fetchTalksFromDharmaseed(
+      database,
+      async (talks) => {
+        await processBatch(talks, (talk) => processTalk(talk, ctx), {
+          batchSize: 10,
+        });
+      },
+      undefined, // maxPages
+      skipProcessing
+    );
 
     logger.info("Sync completed successfully");
   } catch (error) {

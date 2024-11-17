@@ -32,16 +32,25 @@ export async function loader({ request, context }: LoaderArgs) {
     // Verify the request is from Cloudflare
     verifyCloudflareWorkerRequest(request);
 
-    // Get the database from context (now properly typed)
+    // Get the database from context
     const db = context.env.DB;
     if (!db) {
       throw new Error("Database not found in context");
     }
 
-    // Run the sync
-    await syncTalks(db);
+    // Parse URL to get skipProcessing parameter
+    const url = new URL(request.url);
+    const skipProcessing = url.searchParams.get("skipProcessing") === "true";
 
-    return json({ success: true, message: "Sync completed successfully" });
+    // Run the sync with skipProcessing parameter
+    await syncTalks(db, skipProcessing);
+
+    return json({
+      success: true,
+      message: skipProcessing
+        ? "Sync completed successfully (processing skipped)"
+        : "Sync completed successfully",
+    });
   } catch (error) {
     console.error("Error in sync endpoint:", error);
     return json(
