@@ -5,13 +5,12 @@ import { Search } from "lucide-react";
 import { TeacherCard } from "~/components/teacher-card";
 import { db } from "~/db/client.server";
 import { teachers } from "~/db/schema";
-import { Env } from "~/types";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const search = url.searchParams.get("q") || "";
 
-  const results = await db((context.env as Env).DB).query.teachers.findMany({
+  const results = await db(context.cloudflare.env.DB).query.teachers.findMany({
     where: search ? like(teachers.name, `%${search}%`) : undefined,
     orderBy: (teachers, { desc }) => [desc(teachers.name)],
     limit: 50,

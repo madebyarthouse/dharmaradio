@@ -6,7 +6,6 @@ import { Globe } from "lucide-react";
 import { TalkCard } from "~/components/talk-card";
 import { db } from "~/db/client.server";
 import { retreats } from "~/db/schema";
-import { Env } from "~/types";
 
 export async function loader({ params, context }: LoaderFunctionArgs) {
   const { slug } = params;
@@ -15,7 +14,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     throw new Error("Retreat slug is required");
   }
 
-  const retreat = await db((context.env as Env).DB).query.retreats.findFirst({
+  const retreat = await db(context.cloudflare.env.DB).query.retreats.findFirst({
     where: eq(retreats.slug, slug),
     with: {
       talks: {

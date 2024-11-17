@@ -14,7 +14,6 @@ type PlayerProps = {
     id: string;
     title: string;
     teacher: string;
-    imageUrl: string;
     duration: number;
   };
 };
@@ -33,11 +32,6 @@ export function Player({ talk }: PlayerProps) {
     >
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-4 flex-1">
-          <img
-            src={talk.imageUrl}
-            alt="Talk thumbnail"
-            className="w-12 h-12 rounded-lg object-cover"
-          />
           <div>
             <h3 className="font-medium text-sage-900">{talk.title}</h3>
             <p className="text-sm text-sage-600">{talk.teacher}</p>

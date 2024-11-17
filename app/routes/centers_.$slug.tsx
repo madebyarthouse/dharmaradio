@@ -15,7 +15,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     throw new Error("Center slug is required");
   }
 
-  const center = await db((context.env as Env).DB).query.centers.findFirst({
+  const center = await db(context.cloudflare.env.DB).query.centers.findFirst({
     where: eq(centers.slug, slug),
     with: {
       talks: {
