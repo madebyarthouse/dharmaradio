@@ -121,7 +121,7 @@ export default function Talks() {
           {talks.map((talk) => (
             <TalkCard
               key={talk.slug}
-              id={String(talk.id)}
+              id={talk.id}
               slug={talk.slug}
               title={talk.title}
               duration={talk.duration}
