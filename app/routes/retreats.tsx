@@ -70,13 +70,15 @@ export default function Retreats() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <h1 className="text-3xl font-serif">Meditation Retreats</h1>
-        <SearchInput
-          value={searchTerm}
-          onChange={setSearchTerm}
-          placeholder="Search retreats..."
-        />
+        <div className="w-full md:w-auto">
+          <SearchInput
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Search retreats..."
+          />
+        </div>
       </div>
 
       <div className="mb-4 flex gap-2">

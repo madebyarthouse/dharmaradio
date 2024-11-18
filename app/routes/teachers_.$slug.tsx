@@ -54,20 +54,24 @@ export default function TeacherDetail() {
         animate={{ opacity: 1 }}
         className="bg-white/60 backdrop-blur rounded-xl p-8 shadow-sm mb-8"
       >
-        <div className="flex items-start space-x-8">
-          <motion.img
+        <div className="flex flex-col md:flex-row md:items-start md:space-x-8">
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            src={teacher.profileImageUrl || ""}
-            alt={teacher.name}
-            className="w-32 h-32 rounded-full object-cover ring-4 ring-sage-100"
-          />
+            className="flex justify-center mb-6 md:mb-0"
+          >
+            <img
+              src={teacher.profileImageUrl || ""}
+              alt={teacher.name}
+              className="w-32 h-32 rounded-full object-cover ring-4 ring-sage-100"
+            />
+          </motion.div>
           <div className="flex-1">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-3xl font-serif mb-2"
+              className="text-3xl font-serif mb-2 text-center md:text-left"
             >
               {teacher.name}
             </motion.h1>
@@ -79,7 +83,7 @@ export default function TeacherDetail() {
             >
               {teacher.description}
             </motion.p>
-            <div className="flex space-x-4">
+            <div className="flex justify-center md:justify-start space-x-4">
               {teacher.websiteUrl && (
                 <a
                   href={teacher.websiteUrl}
