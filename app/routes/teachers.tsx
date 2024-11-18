@@ -1,10 +1,12 @@
 import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { useLoaderData, useSearchParams } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import { like } from "drizzle-orm";
-import { Search } from "lucide-react";
 import { TeacherCard } from "~/components/teacher-card";
 import { db } from "~/db/client.server";
 import { teachers } from "~/db/schema";
+import { SearchInput } from "~/components/ui/search-input";
+import { Suspense } from "react";
+import { useSearchWithDebounce } from "~/utils/search-params";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -26,33 +28,34 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
 export default function Teachers() {
   const { teachers } = useLoaderData<typeof loader>();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const search = searchParams.get("q") || "";
+  const { searchTerm, setSearchTerm } = useSearchWithDebounce();
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <h1 className="text-3xl font-serif">Teachers</h1>
-        <div className="relative">
-          <input
-            type="text"
+        <div className="w-full md:w-auto">
+          <SearchInput
+            value={searchTerm}
+            onChange={setSearchTerm}
             placeholder="Search teachers..."
-            value={search}
-            onChange={(e) => setSearchParams({ q: e.target.value })}
-            className="pl-10 pr-4 py-2 rounded-lg bg-white/60 backdrop-blur border border-sage-200 focus:border-sage-400 focus:ring focus:ring-sage-200 focus:ring-opacity-50 transition-all"
-          />
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-sage-400"
-            size={18}
           />
         </div>
       </div>
 
-      <div className="grid gap-4">
-        {teachers.map((teacher) => (
-          <TeacherCard key={teacher.slug} {...teacher} />
-        ))}
-      </div>
+      <Suspense
+        fallback={
+          <div className="flex justify-center py-8">
+            <div className="animate-pulse">Loading...</div>
+          </div>
+        }
+      >
+        <div className="grid gap-4">
+          {teachers.map((teacher) => (
+            <TeacherCard key={teacher.slug} {...teacher} />
+          ))}
+        </div>
+      </Suspense>
     </div>
   );
 }

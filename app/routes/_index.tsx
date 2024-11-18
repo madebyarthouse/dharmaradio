@@ -116,44 +116,26 @@ export default function Home() {
 
   return (
     <div className="py-10 px-5 max-w-full md:w-[80ch] mx-auto text-brand flex flex-col items-center">
-      <section className="flex items-center justify-center py-10">
-        <div className="rounded-full border-4 scale-[0.25] border-brand breath-circle h-[250px] w-[250px]"></div>
-      </section>
-
-      <section className="text-center max-w-full text-balance w-[60ch] mx-auto overflow-y-auto">
-        <p
-          className="italic"
-          dangerouslySetInnerHTML={{ __html: `"${randomQuote.text}"` }}
-        ></p>
-        <p className="mt-1">– {randomQuote.source}</p>
-      </section>
-
-      <section className="flex items-center justify-center py-10">
-        <Sounds />
-      </section>
-
       <header className="flex gap-2 w-fit max-w-full md:w-[60ch] justify-center items-center flex-col">
         <div className="flex flex-col items-center justify-center gap-1">
           <h1 className="text-4xl font-bold">Dharma Radio</h1>
-          <h2 className="text-xl">Coming Soon!</h2>
+          <p className="w-full text-balance mt-5 md:w-[40ch] text-center">
+            is a <strong>pre-release</strong> web application which makes the
+            dharma talks from{" "}
+            <a
+              target="_blank"
+              className="underline underline-offset-2"
+              rel="noreferrer"
+              href="https://dharmaseed.org"
+            >
+              Dharma&nbsp;Seed
+            </a>{" "}
+            more accessible.
+          </p>
         </div>
-        <p className="w-full mt-5 md:w-[40ch] text-center">
-          Dharma Radio is a web application which makes the dharma talks from{" "}
-          <a
-            target="_blank"
-            className="underline underline-offset-2"
-            rel="noreferrer"
-            href="https://dharmaseed.org"
-          >
-            Dharma Seed
-          </a>{" "}
-          more accessible.
-        </p>
-
-        <hr className="expanding-line h-[1px] max-w-full bg-brand transition-all mt-5" />
       </header>
 
-      <footer className="max-w-full md:w-[65ch] mx-auto flex flex-col items-center justify-center">
+      <footer className="max-w-full md:w-[65ch] mx-auto flex text-center flex-col items-center justify-center">
         <div className="pt-5 flex items-center justify-center">
           <p className="">
             made by{" "}
@@ -179,6 +161,24 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      <aside>
+        <hr className="expanding-line max-w-full bg-transparent transition-all my-3" />
+        <Sounds />
+        <hr className="expanding-line h-[1px] max-w-full bg-brand transition-all mt-3" />
+      </aside>
+
+      <section aria-hidden className="flex items-center justify-center py-10">
+        <div className="rounded-full border-4 scale-[0.25] border-brand breath-circle h-[250px] w-[250px]"></div>
+      </section>
+
+      <section className="text-center max-w-full text-balance w-[60ch] mx-auto overflow-y-auto">
+        <p
+          className="italic"
+          dangerouslySetInnerHTML={{ __html: `"${randomQuote.text}"` }}
+        ></p>
+        <p className="mt-1">– {randomQuote.source}</p>
+      </section>
     </div>
   );
 }
