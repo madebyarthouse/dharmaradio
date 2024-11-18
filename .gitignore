@@ -4,7 +4,6 @@ node_modules
 /functions/metafile.*
 /functions/version.txt
 .wrangler
-public
 build
 .cache
 .dev.vars

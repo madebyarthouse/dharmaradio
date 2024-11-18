@@ -16,11 +16,15 @@ export function Navbar() {
 
   return (
     <nav>
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 py-5">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
-            <Radio className="text-sage-600" size={24} />
-            <span className="font-serif text-xl text-sage-900">
+            <img
+              src="/dharmaradio-logo-v0.png"
+              alt=""
+              className="w-14 aspect-square h-14"
+            />
+            <span className="font-serif text-3xl text-green-900">
               Dharma Radio
             </span>
           </Link>
@@ -31,10 +35,10 @@ export function Navbar() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`text-sm font-medium transition-colors ${
+                className={`text-xl font-medium text-green-900 transition-all ${
                   location.pathname === link.path
-                    ? "text-sage-900 border-b-2 border-sage-600"
-                    : "text-sage-600 hover:text-sage-900"
+                    ? "underline"
+                    : "hover:opacity-80"
                 }`}
               >
                 {link.label}
@@ -45,7 +49,7 @@ export function Navbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-sage-600 hover:text-sage-900 transition-colors"
+            className="md:hidden text-green-600 hover:text-green-900 transition-colors"
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -59,7 +63,7 @@ export function Navbar() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="md:hidden absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-sage-200 shadow-lg"
+            className="md:hidden absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-green-200 shadow-lg"
           >
             <div className="container mx-auto px-4 py-4">
               <div className="flex flex-col space-y-4">
@@ -70,8 +74,8 @@ export function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                     className={`text-sm font-medium p-2 rounded-lg transition-colors ${
                       location.pathname === link.path
-                        ? "bg-sage-100 text-sage-900"
-                        : "text-sage-600 hover:bg-sage-50 hover:text-sage-900"
+                        ? "bg-green-100 text-green-900"
+                        : "text-green-600 hover:bg-green-50 hover:text-green-900"
                     }`}
                   >
                     {link.label}
