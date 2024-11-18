@@ -82,7 +82,16 @@ export default function RetreatDetail() {
         <h2 className="text-xl font-medium mb-4">Retreat Talks</h2>
         <div className="grid gap-4">
           {retreat.talks.map((talk) => (
-            <TalkCard key={talk.slug} {...talk} retreat={retreat} />
+            <TalkCard
+              key={talk.slug}
+              {...talk}
+              centerName={talk.center?.name}
+              centerSlug={talk.center?.slug}
+              retreatTitle={retreat.title}
+              retreatSlug={retreat.slug}
+              teacherName={talk.teacher?.name}
+              teacherSlug={talk.teacher?.slug}
+            />
           ))}
         </div>
       </div>

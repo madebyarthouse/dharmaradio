@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useSearchParams } from "@remix-run/react";
 import { eq, desc } from "drizzle-orm";
 import { motion } from "framer-motion";
 import { db } from "~/db/client.server";
@@ -7,7 +7,6 @@ import { centers, retreats, talks, teachers } from "~/db/schema";
 import { TalkCard } from "~/components/talk-card";
 import { withPagination } from "~/utils/pagination.server";
 import { Pagination } from "~/components/ui/pagination";
-import { useSearchParams } from "@remix-run/react";
 
 export async function loader({ params, request, context }: LoaderFunctionArgs) {
   const { slug } = params;
@@ -34,6 +33,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       id: talks.id,
       slug: talks.slug,
       title: talks.title,
+      audioUrl: talks.audioUrl,
       description: talks.description,
       duration: talks.duration,
       publicationDate: talks.publicationDate,
