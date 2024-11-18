@@ -66,6 +66,11 @@ export default function TalkDetail() {
         teacher: talk.teacher?.name || null,
         duration: talk.duration,
         audioUrl: talk.audioUrl,
+        teacherSlug: talk.teacher?.slug || null,
+        centerName: talk.center?.name || null,
+        centerSlug: talk.center?.slug || null,
+        retreatTitle: talk.retreat?.title || null,
+        retreatSlug: talk.retreat?.slug || null,
       });
     }
   };

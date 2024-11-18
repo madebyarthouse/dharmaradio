@@ -23,11 +23,13 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
           center: {
             columns: {
               name: true,
+              slug: true,
             },
           },
           retreat: {
             columns: {
               title: true,
+              slug: true,
             },
           },
         },
@@ -115,7 +117,16 @@ export default function TeacherDetail() {
         <h2 className="text-xl font-medium mb-4">Recent Talks</h2>
         <div className="grid gap-4">
           {teacher.talks.map((talk) => (
-            <TalkCard key={talk.slug} {...talk} teacher={teacher} />
+            <TalkCard
+              key={talk.slug}
+              {...talk}
+              teacherName={teacher.name}
+              teacherSlug={teacher.slug}
+              centerName={talk.center?.name ?? null}
+              centerSlug={talk.center?.slug ?? null}
+              retreatTitle={talk.retreat?.title ?? null}
+              retreatSlug={talk.retreat?.slug ?? null}
+            />
           ))}
         </div>
       </motion.div>
