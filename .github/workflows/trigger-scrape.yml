@@ -2,8 +2,8 @@ name: Trigger Sync API
 
 on:
   schedule:
-    # Run every 10 minutes
-    - cron: "*/10 * * * *"
+    # Run every 30 minutes
+    - cron: "*/30 * * * *"
   # Optional: Allow manual triggering
   workflow_dispatch:
 
