@@ -2,16 +2,9 @@ import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { syncTalks } from "~/sync/sync-to-db";
 import { syncTeachers } from "~/sync/sync-teachers";
 
-// Extend the LoaderFunctionArgs to include our env type
-interface LoaderArgs extends LoaderFunctionArgs {
-  context: {
-    env: Env;
-  };
-}
-
 type SyncCommand = "teachers" | "all";
 
-export async function loader({ request, context }: LoaderArgs) {
+export async function loader({ request, context }: LoaderFunctionArgs) {
   try {
     // Only allow GET requests
     if (request.method !== "GET") {

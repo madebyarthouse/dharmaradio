@@ -14,7 +14,7 @@ type TalkCardProps = {
   retreatTitle?: string | null;
   retreatSlug?: string | null;
   audioUrl: string;
-  id: string;
+  id: number;
 };
 
 export function TalkCard({

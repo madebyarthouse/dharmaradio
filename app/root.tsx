@@ -9,11 +9,11 @@ import {
 } from "@remix-run/react";
 import { Navbar } from "~/components/Navbar";
 import { Player } from "~/components/Player";
-import tailwind from "~/app.css?url";
+import stylesheet from "~/tailwind.css?url";
 import { AudioProvider } from "~/contexts/audio-context";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: tailwind },
+  { rel: "stylesheet", href: stylesheet },
 ];
 
 export default function App() {
