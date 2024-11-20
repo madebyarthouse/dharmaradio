@@ -28,11 +28,11 @@ type AudioContextType = {
 };
 
 type PlayerTalk = Talk & {
-  teacherSlug: string | null;
-  centerName: string | null;
-  centerSlug: string | null;
-  retreatTitle: string | null;
-  retreatSlug: string | null;
+  teacherSlug: string | null | undefined;
+  centerName: string | null | undefined;
+  centerSlug: string | null | undefined;
+  retreatTitle: string | null | undefined;
+  retreatSlug: string | null | undefined;
 };
 
 const AudioContext = createContext<AudioContextType | null>(null);
@@ -110,7 +110,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           });
       }
     },
-    [currentTalk?.id]
+    [currentTalk?.id],
   );
 
   const pauseTalk = useCallback(() => {

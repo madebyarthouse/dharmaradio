@@ -1,22 +1,28 @@
 import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
-import { eq, like, desc, asc, sql } from "drizzle-orm";
-import { SearchInput } from "~/components/ui/search-input";
-import { SortButton } from "~/components/ui/sort-button";
-import { Pagination } from "~/components/ui/pagination";
+import { eq, like, sql } from "drizzle-orm";
 import { CenterCard } from "~/components/center-card";
 import { db } from "~/db/client.server";
 import { centers, talks } from "~/db/schema";
-import { Suspense } from "react";
 import { withPagination } from "~/utils/pagination.server";
-import { useSearchWithDebounce, useSort } from "~/utils/search-params";
+import { getRequestParams } from "~/utils/request-params";
+import { withOrdering } from "~/utils/with-ordering";
+import { FilterableList } from "~/components/ui/filterable-list";
+import { AnimatedList } from "~/components/ui/animated-list";
+import { cacheHeader } from "pretty-cache-header";
 
+export const headers = {
+  "Cache-Control": cacheHeader({
+    maxAge: "15min",
+    sMaxage: "3hours",
+    staleWhileRevalidate: "1day",
+  }),
+};
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const url = new URL(request.url);
-  const searchQuery = url.searchParams.get("q") || "";
-  const page = parseInt(url.searchParams.get("page") || "1");
-  const sortField = url.searchParams.get("sort") || "name";
-  const sortOrder = (url.searchParams.get("order") || "asc") as "asc" | "desc";
+  const { searchQuery, page, sort, hasSearch } = getRequestParams(request, {
+    field: "name",
+    order: "asc",
+  });
 
   const database = db(context.cloudflare.env.DB);
 
@@ -28,117 +34,60 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       description: centers.description,
       talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
       teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
-        "teachers_count"
+        "teachers_count",
       ),
       retreatsCount: sql<number>`count(distinct ${talks.retreatId})`.as(
-        "retreats_count"
+        "retreats_count",
       ),
     })
     .from(centers)
     .leftJoin(talks, eq(talks.centerId, centers.id))
-    .where(
-      searchQuery.length >= 2
-        ? like(centers.name, `%${searchQuery}%`)
-        : undefined
-    )
+    .where(hasSearch ? like(centers.name, `%${searchQuery}%`) : undefined)
     .groupBy(centers.id)
     .orderBy(
-      sortField === "talks"
-        ? sortOrder === "asc"
-          ? asc(sql`talks_count`)
-          : desc(sql`talks_count`)
-        : sortField === "teachers"
-        ? sortOrder === "asc"
-          ? asc(sql`teachers_count`)
-          : desc(sql`teachers_count`)
-        : sortField === "retreats"
-        ? sortOrder === "asc"
-          ? asc(sql`retreats_count`)
-          : desc(sql`retreats_count`)
-        : sortOrder === "asc"
-        ? asc(centers.name)
-        : desc(centers.name)
+      withOrdering({
+        field: sort.field,
+        order: sort.order,
+        config: {
+          name: { column: centers.name },
+          talks: { column: sql`talks_count` },
+          teachers: { column: sql`teachers_count` },
+          retreats: { column: sql`retreats_count` },
+        },
+      }),
     );
 
   return withPagination({
     query: query.$dynamic(),
-    params: { page, perPage: 20 },
+    params: { page, perPage: 30 },
   });
 }
 
 export default function Centers() {
   const { items: centers, pagination } = useLoaderData<typeof loader>();
-  const { searchTerm, setSearchTerm, setSearchParams } =
-    useSearchWithDebounce();
-  const { sort, order, updateSort } = useSort<
-    "name" | "talks" | "teachers" | "retreats"
-  >("name");
+
+  const sortOptions = [
+    { label: "Talks", value: "talks" },
+    { label: "Teachers", value: "teachers" },
+    { label: "Retreats", value: "retreats" },
+    { label: "Name", value: "name" },
+  ];
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <h1 className="text-3xl font-serif">Meditation Centers</h1>
-        <div className="w-full md:w-auto">
-          <SearchInput
-            value={searchTerm}
-            onChange={setSearchTerm}
-            placeholder="Search centers..."
-          />
-        </div>
-      </div>
-
-      <div className="mb-4 flex gap-2">
-        <SortButton
-          label="Name"
-          active={sort === "name"}
-          ascending={order === "asc"}
-          onClick={() => updateSort("name")}
-        />
-        <SortButton
-          label="Talks"
-          active={sort === "talks"}
-          ascending={order === "asc"}
-          onClick={() => updateSort("talks")}
-        />
-        <SortButton
-          label="Teachers"
-          active={sort === "teachers"}
-          ascending={order === "asc"}
-          onClick={() => updateSort("teachers")}
-        />
-        <SortButton
-          label="Retreats"
-          active={sort === "retreats"}
-          ascending={order === "asc"}
-          onClick={() => updateSort("retreats")}
-        />
-      </div>
-
-      <Suspense
-        fallback={
-          <div className="flex justify-center py-8">
-            <div className="animate-pulse">Loading...</div>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          {centers.map((center) => (
-            <CenterCard key={center.slug} {...center} />
-          ))}
-        </div>
-      </Suspense>
-
-      <Pagination
-        currentPage={pagination.current}
-        totalPages={pagination.pages}
-        onPageChange={(page) =>
-          setSearchParams((prev) => {
-            const newParams = new URLSearchParams(prev);
-            newParams.set("page", page.toString());
-            return newParams;
-          })
-        }
-      />
-    </div>
+    <FilterableList
+      title="Meditation Centers"
+      totalItems={pagination.total}
+      itemName="center"
+      sortOptions={sortOptions}
+      defaultSort="name"
+      currentPage={pagination.current}
+      totalPages={pagination.pages}
+    >
+      <AnimatedList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {centers.map((center) => (
+          <CenterCard key={center.slug} {...center} />
+        ))}
+      </AnimatedList>
+    </FilterableList>
   );
 }

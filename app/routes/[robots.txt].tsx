@@ -1,6 +1,14 @@
 import { LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { cacheHeader } from "pretty-cache-header";
 
+export const headers = {
+  "Cache-Control": cacheHeader({
+    maxAge: "1day",
+    sMaxage: "1week",
+    staleWhileRevalidate: "1month",
+  }),
+};
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const baseUrl = new URL(request.url).origin;
 

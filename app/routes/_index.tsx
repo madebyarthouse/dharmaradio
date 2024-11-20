@@ -97,9 +97,9 @@ const quotes = [
 
 export const headers = {
   "Cache-Control": cacheHeader({
-    maxAge: "1min",
-    sMaxage: "5min",
-    staleWhileRevalidate: "10min",
+    maxAge: "15min",
+    sMaxage: "3hours",
+    staleWhileRevalidate: "1day",
   }),
 };
 

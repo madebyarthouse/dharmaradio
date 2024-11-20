@@ -2,10 +2,37 @@ import { useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useState } from "react";
 import debounce from "just-debounce-it";
 
-export type SortConfig = {
-  field: string;
+export type Sort = {
+  sort: string;
   order: "asc" | "desc";
 };
+
+export function useSort<T extends string>(defaultSort: T) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sort = (searchParams.get("sort") || defaultSort) as T;
+  const order = (searchParams.get("order") || "asc") as "asc" | "desc";
+
+  const updateSort = useCallback(
+    (newSort: T) => {
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        const currentSort = newParams.get("sort");
+        const currentOrder = newParams.get("order");
+
+        newParams.set("sort", newSort);
+        if (currentSort === newSort) {
+          newParams.set("order", currentOrder === "asc" ? "desc" : "asc");
+        } else {
+          newParams.set("order", "asc");
+        }
+        return newParams;
+      });
+    },
+    [setSearchParams],
+  );
+
+  return { sort, order, updateSort };
+}
 
 export function useSearchWithDebounce(minChars = 2, delay = 300) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,23 +40,28 @@ export function useSearchWithDebounce(minChars = 2, delay = 300) {
 
   const debouncedSetSearch = useCallback(
     debounce((value: string) => {
-      if (value.length >= minChars) {
-        setSearchParams((prev) => {
-          const newParams = new URLSearchParams(prev);
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        const oldQuery = newParams.get("q");
+
+        if (value.length >= minChars) {
           newParams.set("q", value);
-          newParams.set("page", "1"); // Reset to first page on search
-          return newParams;
-        });
-      } else if (value.length === 0) {
-        setSearchParams((prev) => {
-          const newParams = new URLSearchParams(prev);
+          // Only reset page if search query changed
+          if (oldQuery !== value) {
+            newParams.set("page", "1");
+          }
+        } else {
+          const hadQuery = newParams.has("q");
           newParams.delete("q");
-          newParams.set("page", "1");
-          return newParams;
-        });
-      }
+          // Only reset page if there was a query to clear
+          if (hadQuery) {
+            newParams.set("page", "1");
+          }
+        }
+        return newParams;
+      });
     }, delay),
-    [setSearchParams]
+    [setSearchParams, minChars],
   );
 
   useEffect(() => {
@@ -42,31 +74,6 @@ export function useSearchWithDebounce(minChars = 2, delay = 300) {
   return {
     searchTerm,
     setSearchTerm,
-    searchParams,
     setSearchParams,
   };
-}
-
-export function useSort<T extends string>(defaultField: T) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const sort = (searchParams.get("sort") as T) || defaultField;
-  const order = (searchParams.get("order") || "asc") as "asc" | "desc";
-
-  const updateSort = useCallback(
-    (field: T) => {
-      setSearchParams((prev) => {
-        const newParams = new URLSearchParams(prev);
-        if (sort === field) {
-          newParams.set("order", order === "asc" ? "desc" : "asc");
-        } else {
-          newParams.set("sort", field);
-          newParams.set("order", "asc");
-        }
-        return newParams;
-      });
-    },
-    [sort, order, setSearchParams]
-  );
-
-  return { sort, order, updateSort };
 }
