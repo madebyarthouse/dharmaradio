@@ -73,16 +73,18 @@ export default function App() {
         <meta name="og:image:width" content="1200" />
         <meta name="og:image:height" content="1200" />
       </head>
-      <body className="h-full bg-sage-50">
+      <body className="h-full">
         <AudioProvider>
           <div className="min-h-full flex flex-col">
             <div className="sticky top-0 z-50 bg-brandLight/95 backdrop-blur-sm border-b border-brandLight-200">
               <Navbar />
             </div>
             <main className="flex-1 px-4 py-8 overflow-auto">
-              <Outlet />
+              <div className="max-w-5xl mx-auto">
+                <Outlet />
+              </div>
             </main>
-            <div className="sticky pt-14 bottom-0 z-50">
+            <div className="sticky pt-40 bottom-0 z-50">
               <Player />
             </div>
           </div>

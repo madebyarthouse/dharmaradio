@@ -1,13 +1,23 @@
 import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { motion } from "framer-motion";
-import { Calendar, Clock, Building, Play, Pause } from "lucide-react";
+import { Calendar, Clock, Play, Pause } from "lucide-react";
 import { db } from "~/db/client.server";
-import { talks } from "~/db/schema";
-import { useState } from "react";
-import { Link } from "@remix-run/react";
+import { talks, teachers, retreats, centers } from "~/db/schema";
 import { useAudio } from "~/contexts/audio-context";
+import { TeacherCard } from "~/components/teacher-card";
+import { CenterCard } from "~/components/center-card";
+import { RetreatCard } from "~/components/retreat-card";
+import { cacheHeader } from "pretty-cache-header";
+
+export const headers = {
+  "Cache-Control": cacheHeader({
+    maxAge: "3hours",
+    sMaxage: "1day",
+    staleWhileRevalidate: "1week",
+  }),
+};
 
 export async function loader({ params, context }: LoaderFunctionArgs) {
   const { slug } = params;
@@ -16,39 +26,91 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     throw new Error("Talk slug is required");
   }
 
-  const talk = await db(context.cloudflare.env.DB).query.talks.findFirst({
+  const database = db(context.cloudflare.env.DB);
+
+  // Get talk with basic relations
+  const talk = await database.query.talks.findFirst({
     where: eq(talks.slug, slug),
-    with: {
-      teacher: {
-        columns: {
-          name: true,
-          slug: true,
-          profileImageUrl: true,
-          description: true,
-        },
-      },
-      center: {
-        columns: {
-          name: true,
-          slug: true,
-          description: true,
-        },
-      },
-      retreat: {
-        columns: {
-          title: true,
-          slug: true,
-          description: true,
-        },
-      },
-    },
   });
 
   if (!talk) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  return { talk };
+  // Get teacher with counts
+  const teacherQuery = database
+    .select({
+      id: teachers.id,
+      name: teachers.name,
+      slug: teachers.slug,
+      description: teachers.description,
+      profileImageUrl: teachers.profileImageUrl,
+      talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
+      retreatsCount:
+        sql<number>`count(distinct case when ${retreats.id} is not null then ${retreats.id} end)`.as(
+          "retreats_count",
+        ),
+      centersCount:
+        sql<number>`count(distinct case when ${centers.id} is not null then ${centers.id} end)`.as(
+          "centers_count",
+        ),
+    })
+    .from(teachers)
+    .leftJoin(talks, eq(talks.teacherId, teachers.id))
+    .leftJoin(retreats, eq(talks.retreatId, retreats.id))
+    .leftJoin(centers, eq(talks.centerId, centers.id))
+    .where(eq(teachers.id, talk.teacherId))
+    .groupBy(teachers.id);
+
+  // Get retreat with counts
+  const retreatQuery = database
+    .select({
+      id: retreats.id,
+      title: retreats.title,
+      slug: retreats.slug,
+      description: retreats.description,
+      talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
+      teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
+        "teachers_count",
+      ),
+    })
+    .from(retreats)
+    .leftJoin(talks, eq(talks.retreatId, retreats.id))
+    .where(talk.retreatId ? eq(retreats.id, talk.retreatId) : undefined)
+    .groupBy(retreats.id);
+
+  // Get center with counts
+  const centerQuery = database
+    .select({
+      id: centers.id,
+      name: centers.name,
+      slug: centers.slug,
+      description: centers.description,
+      talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
+      teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
+        "teachers_count",
+      ),
+      retreatsCount: sql<number>`count(distinct ${talks.retreatId})`.as(
+        "retreats_count",
+      ),
+    })
+    .from(centers)
+    .leftJoin(talks, eq(talks.centerId, centers.id))
+    .where(talk.centerId ? eq(centers.id, talk.centerId) : undefined)
+    .groupBy(centers.id);
+
+  const [teacher] = await teacherQuery;
+  const [retreat] = await retreatQuery;
+  const [center] = await centerQuery;
+
+  return {
+    talk: {
+      ...talk,
+      teacher,
+      retreat,
+      center,
+    },
+  };
 }
 
 export default function TalkDetail() {
@@ -76,7 +138,7 @@ export default function TalkDetail() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -93,7 +155,7 @@ export default function TalkDetail() {
             </motion.h1>
             <motion.button
               onClick={handlePlayToggle}
-              className="relative w-16 h-16 rounded-full bg-sage-600 text-white flex items-center justify-center hover:bg-sage-700 transition-colors"
+              className="relative w-16 h-16 rounded-full bg-green-600 text-white flex items-center justify-center hover:bg-green-700 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -138,7 +200,7 @@ export default function TalkDetail() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className="flex flex-wrap gap-4 text-sm text-sage-600 mb-4"
+            className="flex flex-wrap gap-4 text-sm text-green-800 mb-4"
           >
             <div className="flex items-center space-x-2">
               <Calendar size={16} />
@@ -157,63 +219,58 @@ export default function TalkDetail() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-sage-600"
+            className="text-green-800"
           >
             {talk.description}
           </motion.p>
-
-          {talk.teacher && (
-            <Link
-              to={`/teachers/${talk.teacher.slug}`}
-              className="flex items-center gap-4 p-4 rounded-lg bg-white/40 hover:bg-white/60 transition-colors"
-            >
-              {talk.teacher.profileImageUrl && (
-                <img
-                  src={talk.teacher.profileImageUrl}
-                  alt={talk.teacher.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              )}
-              <div>
-                <h3 className="font-medium text-sage-900">
-                  {talk.teacher.name}
-                </h3>
-                <p className="text-sm text-sage-600 line-clamp-1">
-                  {talk.teacher.description}
-                </p>
-              </div>
-            </Link>
-          )}
-
-          {talk.retreat && (
-            <Link
-              to={`/retreats/${talk.retreat.slug}`}
-              className="p-4 rounded-lg bg-white/40 hover:bg-white/60 transition-colors"
-            >
-              <h3 className="font-medium text-sage-900 mb-1">
-                From retreat: {talk.retreat.title}
-              </h3>
-              <p className="text-sm text-sage-600 line-clamp-2">
-                {talk.retreat.description}
-              </p>
-            </Link>
-          )}
-
-          {talk.center && (
-            <Link
-              to={`/centers/${talk.center.slug}`}
-              className="p-4 rounded-lg bg-white/40 hover:bg-white/60 transition-colors"
-            >
-              <h3 className="font-medium text-sage-900 mb-1">
-                At {talk.center.name}
-              </h3>
-              <p className="text-sm text-sage-600 line-clamp-2">
-                {talk.center.description}
-              </p>
-            </Link>
-          )}
         </div>
       </motion.div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {talk.teacher && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <TeacherCard
+              {...talk.teacher}
+              talksCount={Number(talk.teacher.talksCount)}
+              retreatsCount={Number(talk.teacher.retreatsCount)}
+              centersCount={Number(talk.teacher.centersCount)}
+            />
+          </motion.div>
+        )}
+
+        {talk.retreat && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <RetreatCard
+              {...talk.retreat}
+              talksCount={Number(talk.retreat.talksCount)}
+              teachersCount={Number(talk.retreat.teachersCount)}
+            />
+          </motion.div>
+        )}
+
+        {talk.center && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <CenterCard
+              {...talk.center}
+              talksCount={Number(talk.center.talksCount)}
+              teachersCount={Number(talk.center.teachersCount)}
+              retreatsCount={Number(talk.center.retreatsCount)}
+            />
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }

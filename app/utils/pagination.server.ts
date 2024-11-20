@@ -23,21 +23,20 @@ export async function withPagination<T extends SQLiteSelect>({
 }) {
   const { page = 1, perPage = 20 } = params;
 
-  const countQuery = query.$dynamic();
+  // TODO: Currently we need to execute the count query first, then the paginated query.
+  // Running these in parallel causes issues with the drizzle query.
+  // This should be fixed to allow parallel execution for better performance.
+  const allItems = await query.$dynamic();
+  const total = allItems.length;
+  const pages = Math.ceil(total / perPage);
 
-  // Execute the paginated query
-  const [items, count] = await Promise.all([
-    query.limit(perPage).offset((page - 1) * perPage),
-    countQuery.then((value) => value.length),
-  ]);
-
-  console.log(count, Math.ceil(Number(count) / perPage));
+  const items = await query.limit(perPage).offset((page - 1) * perPage);
 
   return {
     items,
     pagination: {
-      total: Number(count),
-      pages: Math.ceil(Number(count) / perPage),
+      total,
+      pages,
       current: page,
     },
   };

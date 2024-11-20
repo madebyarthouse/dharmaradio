@@ -14,7 +14,7 @@ export function SortButton({
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1 rounded ${active ? "bg-sage-200" : "bg-sage-100"}`}
+      className={`px-3 py-1 rounded ${active ? "bg-green-200" : "bg-green-100"}`}
     >
       {label} {active && (ascending ? "↑" : "↓")}
     </button>
