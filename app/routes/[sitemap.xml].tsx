@@ -3,6 +3,14 @@ import { cacheHeader } from "pretty-cache-header";
 import { db } from "~/db/client.server";
 import { talks, teachers, centers, retreats } from "~/db/schema";
 
+export const headers = {
+  "Cache-Control": cacheHeader({
+    maxAge: "1day",
+    sMaxage: "1week",
+    staleWhileRevalidate: "1month",
+  }),
+};
+
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const baseUrl = new URL(request.url).origin;
   const database = db(context.cloudflare.env.DB);
@@ -67,10 +75,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     headers: {
       "Content-Type": "application/xml",
       "Content-Length": encoded.length.toString(),
-      "Cache-Control": cacheHeader({
-        sMaxage: "24h",
-        staleWhileRevalidate: "12h",
-      }),
+      ...headers,
     },
   });
 }
