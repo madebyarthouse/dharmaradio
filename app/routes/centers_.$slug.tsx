@@ -17,9 +17,9 @@ import { cacheHeader } from "pretty-cache-header";
 
 export const headers = {
   "Cache-Control": cacheHeader({
-    maxAge: "15min",
-    sMaxage: "3hours",
-    staleWhileRevalidate: "1day",
+    maxAge: "6hours",
+    sMaxage: "24hours",
+    staleWhileRevalidate: "1week",
   }),
 };
 
