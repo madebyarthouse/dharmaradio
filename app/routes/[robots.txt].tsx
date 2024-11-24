@@ -16,6 +16,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /centers/*
+Disallow: /retreats/*
+Disallow: /talks/*
+Disallow: /teachers/*
+Disallow: /*?page=
+Disallow: /*/page
+Disallow: /*?sort=
+Disallow: /*?filter=
+
+# Allow specific top-level pages
+Allow: /centers$
+Allow: /retreats$
+Allow: /talks$
+Allow: /teachers$
 
 # Sitemaps
 Sitemap: ${baseUrl}/sitemap.xml
@@ -30,7 +44,7 @@ Sitemap: ${baseUrl}/sitemap.xml
       "Content-Length": encoded.length.toString(),
       "Cache-Control": cacheHeader({
         sMaxage: "24h",
-        staleWhileRevalidate: "12h",
+        staleWhileRevalidate: "1week",
       }),
     },
   });
