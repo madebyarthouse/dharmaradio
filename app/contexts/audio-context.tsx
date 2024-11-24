@@ -6,6 +6,7 @@ import {
   useEffect,
   useRef,
 } from "react";
+import { trackPlausibleEvent } from "~/utils/plausible";
 
 type Talk = {
   id: string;
@@ -102,6 +103,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
+            trackPlausibleEvent({
+              event: "play",
+              url: window.location.href,
+              props: {
+                talk_id: talk.title ?? "",
+              },
+            });
             setIsPlaying(true);
           })
           .catch((error) => {
