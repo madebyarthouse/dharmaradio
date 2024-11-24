@@ -1,0 +1,27 @@
+    CREATE INDEX `center_created_at_idx` ON `centers` (`created_at`);--> statement-breakpoint
+CREATE INDEX `center_updated_at_idx` ON `centers` (`updated_at`);--> statement-breakpoint
+CREATE INDEX `center_description_idx` ON `centers` (`description`);--> statement-breakpoint
+CREATE INDEX `retreat_created_at_idx` ON `retreats` (`created_at`);--> statement-breakpoint
+CREATE INDEX `retreat_updated_at_idx` ON `retreats` (`updated_at`);--> statement-breakpoint
+CREATE INDEX `retreat_title_idx` ON `retreats` (`title`);--> statement-breakpoint
+CREATE INDEX `retreat_description_idx` ON `retreats` (`description`);--> statement-breakpoint
+CREATE INDEX `retreat_language_idx` ON `retreats` (`language`);--> statement-breakpoint
+CREATE INDEX `talk_center_idx` ON `talks` (`center_id`);--> statement-breakpoint
+CREATE INDEX `talk_retreat_idx` ON `talks` (`retreat_id`);--> statement-breakpoint
+CREATE INDEX `talk_title_search_idx` ON `talks` (`title`);--> statement-breakpoint
+CREATE INDEX `talk_description_search_idx` ON `talks` (`description`);--> statement-breakpoint
+CREATE INDEX `talk_title_sort_idx` ON `talks` (`title`);--> statement-breakpoint
+CREATE INDEX `talk_duration_sort_idx` ON `talks` (`duration`);--> statement-breakpoint
+CREATE INDEX `talk_publication_date_idx` ON `talks` (`publicationDate`);--> statement-breakpoint
+CREATE INDEX `talk_created_at_idx` ON `talks` (`created_at`);--> statement-breakpoint
+CREATE INDEX `talk_updated_at_idx` ON `talks` (`updated_at`);--> statement-breakpoint
+CREATE INDEX `talk_teacher_publication_idx` ON `talks` (`teacher_id`,`publicationDate`);--> statement-breakpoint
+CREATE INDEX `talk_center_publication_idx` ON `talks` (`center_id`,`publicationDate`);--> statement-breakpoint
+CREATE INDEX `talk_retreat_publication_idx` ON `talks` (`retreat_id`,`publicationDate`);--> statement-breakpoint
+CREATE INDEX `talk_title_publication_idx` ON `talks` (`title`,`publicationDate`);--> statement-breakpoint
+CREATE INDEX `talk_duration_publication_idx` ON `talks` (`duration`,`publicationDate`);--> statement-breakpoint
+CREATE INDEX `teacher_name_idx` ON `teachers` (`name`);--> statement-breakpoint
+CREATE INDEX `teacher_created_at_idx` ON `teachers` (`created_at`);--> statement-breakpoint
+CREATE INDEX `teacher_published_on_idx` ON `teachers` (`published_on`);--> statement-breakpoint
+CREATE INDEX `teacher_updated_at_idx` ON `teachers` (`updated_at`);--> statement-breakpoint
+CREATE INDEX `teacher_name_published_idx` ON `teachers` (`name`,`published_on`);

@@ -15,6 +15,13 @@
       "when": 1731849221792,
       "tag": "0001_complete_sentinels",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1732407340995,
+      "tag": "0002_parched_domino",
+      "breakpoints": true
     }
   ]
 }
