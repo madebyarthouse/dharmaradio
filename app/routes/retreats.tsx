@@ -3,7 +3,7 @@ import { useLoaderData } from "@remix-run/react";
 import { RetreatCard } from "~/components/retreat-card";
 import { db } from "~/db/client.server";
 import { retreats, talks } from "~/db/schema";
-import { withPagination } from "~/utils/pagination.server";
+import { totalCountField, withPagination } from "~/utils/pagination.server";
 import { asc, desc, eq, like, sql } from "drizzle-orm";
 import { AnimatedList } from "~/components/ui/animated-list";
 import { FilterableList } from "~/components/ui/filterable-list";
@@ -37,6 +37,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
         "teachers_count",
       ),
+      ...totalCountField,
     })
     .from(retreats)
     .leftJoin(talks, eq(talks.retreatId, retreats.id))

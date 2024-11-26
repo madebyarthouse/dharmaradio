@@ -4,7 +4,7 @@ import { eq, like, sql } from "drizzle-orm";
 import { CenterCard } from "~/components/center-card";
 import { db } from "~/db/client.server";
 import { centers, talks } from "~/db/schema";
-import { withPagination } from "~/utils/pagination.server";
+import { totalCountField, withPagination } from "~/utils/pagination.server";
 import { getRequestParams } from "~/utils/request-params";
 import { withOrdering } from "~/utils/with-ordering";
 import { FilterableList } from "~/components/ui/filterable-list";
@@ -40,6 +40,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       retreatsCount: sql<number>`count(distinct ${talks.retreatId})`.as(
         "retreats_count",
       ),
+      ...totalCountField,
     })
     .from(centers)
     .leftJoin(talks, eq(talks.centerId, centers.id))

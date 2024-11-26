@@ -8,7 +8,7 @@ import { db } from "~/db/client.server";
 import { retreats, talks, teachers, centers } from "~/db/schema";
 import { FilterableList } from "~/components/ui/filterable-list";
 import { AnimatedList } from "~/components/ui/animated-list";
-import { withPagination } from "~/utils/pagination.server";
+import { totalCountField, withPagination } from "~/utils/pagination.server";
 import { getRequestParams } from "~/utils/request-params";
 import { withOrdering } from "~/utils/with-ordering";
 import { Tabs } from "~/components/ui/tabs";
@@ -57,6 +57,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       teacherProfileImageUrl: teachers.profileImageUrl,
       centerName: centers.name,
       centerSlug: centers.slug,
+      ...totalCountField,
     })
     .from(talks)
     .leftJoin(teachers, eq(teachers.id, talks.teacherId))

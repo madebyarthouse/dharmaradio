@@ -1,4 +1,5 @@
 import type { SQLiteSelect } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
 export type PaginationParams = {
   page?: number;
@@ -14,29 +15,45 @@ export type PaginatedResult<T> = {
   };
 };
 
+export const totalCountField = {
+  total_count: sql<number>`count(*) OVER()`.as("total_count"),
+};
+
 export async function withPagination<T extends SQLiteSelect>({
   query,
   params,
 }: {
   query: T;
   params: PaginationParams;
-}) {
+}): Promise<PaginatedResult<T>> {
   const { page = 1, perPage = 20 } = params;
 
-  // TODO: Currently we need to execute the count query first, then the paginated query.
-  // Running these in parallel causes issues with the drizzle query.
-  // This should be fixed to allow parallel execution for better performance.
-  // const allItems = await query.$dynamic();
-  // const total = allItems.length;
-  // const pages = Math.ceil(total / perPage);
+  const results = await query
+    .limit(perPage)
+    .offset((page - 1) * perPage)
+    .execute();
 
-  const items = await query.limit(perPage).offset((page - 1) * perPage);
+  // Early return if no results
+  if (!results.length) {
+    return {
+      items: [],
+      pagination: {
+        total: 0,
+        pages: 0,
+        current: page,
+      },
+    };
+  }
+
+  // Extract total from first row and remove total_count from results
+  const total = Number(results[0].total_count);
+  const items = results.map(({ total_count, ...rest }) => rest) as T[];
 
   return {
     items,
     pagination: {
-      total: 1,
-      pages: 1,
+      total,
+      pages: Math.ceil(total / perPage),
       current: page,
     },
   };

@@ -8,7 +8,7 @@ import { db } from "~/db/client.server";
 import { teachers, talks, centers, retreats } from "~/db/schema";
 import { FilterableList } from "~/components/ui/filterable-list";
 import { AnimatedList } from "~/components/ui/animated-list";
-import { withPagination } from "~/utils/pagination.server";
+import { totalCountField, withPagination } from "~/utils/pagination.server";
 import { getRequestParams } from "~/utils/request-params";
 import { Tabs } from "~/components/ui/tabs";
 import { CenterCard } from "~/components/center-card";
@@ -76,6 +76,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       centerSlug: centers.slug,
       retreatTitle: retreats.title,
       retreatSlug: retreats.slug,
+      ...totalCountField,
     })
     .from(talks)
     .leftJoin(centers, eq(talks.centerId, centers.id))

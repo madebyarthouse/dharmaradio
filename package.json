@@ -12,10 +12,9 @@
     "format": "prettier --write .",
     "drizzle:studio": "drizzle-kit studio",
     "drizzle:update": "drizzle-kit generate",
-    "drizzle:migrate:local": "npx wrangler d1 migrations apply dharmaradio-db --local",
-    "drizzle:migrate:remote": "npx wrangler d1 migrations apply dharmaradio-db --remote",
-    "d1:new": "npx wrangler d1 create dharmaradio-db",
-    "d1:init": "pnpm run migrations:apply && npx wrangler d1 execute dharmaradio-db --file='./fixtures/data.sql'"
+    "drizzle:migrate:local": "npx wrangler d1 migrations apply dharmaradio --local",
+    "drizzle:migrate:remote": "npx wrangler d1 migrations apply dharmaradio --remote",
+    "d1:init:local": "npx wrangler d1 execute dharmaradio --local --file='./fixtures/dump.sql'"
   },
   "dependencies": {
     "@radix-ui/react-tabs": "^1.1.1",
