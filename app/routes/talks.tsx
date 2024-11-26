@@ -4,7 +4,7 @@ import { eq, like } from "drizzle-orm";
 import { TalkCard } from "~/components/talk-card";
 import { db } from "~/db/client.server";
 import { talks, teachers, centers, retreats } from "~/db/schema";
-import { withPagination } from "~/utils/pagination.server";
+import { totalCountField, withPagination } from "~/utils/pagination.server";
 import { FilterableList } from "~/components/ui/filterable-list";
 import { getRequestParams } from "~/utils/request-params";
 import { withOrdering } from "~/utils/with-ordering";
@@ -48,6 +48,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
         title: retreats.title,
         slug: retreats.slug,
       },
+      ...totalCountField,
     })
     .from(talks)
     .leftJoin(teachers, eq(talks.teacherId, teachers.id))
@@ -63,7 +64,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
           duration: { column: talks.duration },
           date: { column: talks.publicationDate },
         },
-      }),
+      })
     );
 
   return withPagination({

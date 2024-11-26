@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { db } from "~/db/client.server";
 import { centers, retreats, talks, teachers } from "~/db/schema";
 import { TalkCard } from "~/components/talk-card";
-import { withPagination } from "~/utils/pagination.server";
+import { totalCountField, withPagination } from "~/utils/pagination.server";
 import { FilterableList } from "~/components/ui/filterable-list";
 import { AnimatedList } from "~/components/ui/animated-list";
 import { Tabs } from "~/components/ui/tabs";
@@ -58,6 +58,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       teacherProfileImageUrl: teachers.profileImageUrl,
       retreatTitle: retreats.title,
       retreatSlug: retreats.slug,
+      ...totalCountField,
     })
     .from(talks)
     .where(eq(talks.centerId, center.id))
