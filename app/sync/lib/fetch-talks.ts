@@ -12,7 +12,7 @@ const logger = new Logger("fetch-talks");
 
 async function filterNewTalks(
   database: D1Database,
-  scrapedTalks: ScrapedTalk[]
+  scrapedTalks: ScrapedTalk[],
 ): Promise<ScrapedTalk[]> {
   if (scrapedTalks.length === 0) return [];
 
@@ -37,7 +37,7 @@ export async function fetchTalksFromDharmaseed(
   database: D1Database,
   processPage: ProcessPageCallback,
   maxPages?: number,
-  skipProcessing = false
+  skipProcessing = false,
 ): Promise<void> {
   let page = 1;
   let shouldContinue = true;
@@ -63,7 +63,7 @@ export async function fetchTalksFromDharmaseed(
           maxAttempts: 3,
           initialDelay: 3000,
           maxDelay: 10000,
-        }
+        },
       );
 
       logger.info(`Fetched page ${page}`, {

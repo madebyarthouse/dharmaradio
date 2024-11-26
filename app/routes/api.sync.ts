@@ -2,7 +2,7 @@ import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { syncTalks } from "~/sync/sync-to-db";
 import { syncTeachers } from "~/sync/sync-teachers";
 
-type SyncCommand = "teachers" | "all";
+type SyncCommand = "teachers" | "talks" | "all";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   try {
@@ -31,6 +31,11 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
         results.teachers = { success: true };
         break;
 
+      case "talks":
+        await syncTalks(db, skipProcessing);
+        results.talks = { success: true };
+        break;
+
       case "all":
         try {
           await syncTeachers(db);
@@ -56,7 +61,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       default:
         return json(
           { error: `Unknown sync command: ${command}` },
-          { status: 400 }
+          { status: 400 },
         );
     }
 
@@ -72,7 +77,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
           ? "Sync completed (processing skipped)"
           : "Sync completed",
       },
-      { status }
+      { status },
     );
   } catch (error) {
     console.error("Error in sync endpoint:", error);
@@ -82,7 +87,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
         error:
           error instanceof Error ? error.message : "Unknown error occurred",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
