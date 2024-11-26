@@ -16,6 +16,7 @@ type TalkCardProps = {
   retreatSlug: string | null;
   audioUrl: string;
   id: number;
+  publicationDate: string;
 };
 
 export function TalkCard({
@@ -29,6 +30,7 @@ export function TalkCard({
   centerSlug,
   retreatTitle,
   retreatSlug,
+  publicationDate,
   audioUrl,
   id,
 }: TalkCardProps) {
@@ -135,6 +137,10 @@ export function TalkCard({
           </Link>
 
           <div className="mt-1 text-xs">
+            {publicationDate && (
+              <span>{new Date(publicationDate).toLocaleDateString()}</span>
+            )}
+            {publicationDate && retreatTitle && retreatSlug && " | "}
             {retreatTitle && retreatSlug && (
               <Link
                 to={`/retreats/${retreatSlug}`}
@@ -144,15 +150,17 @@ export function TalkCard({
                 {retreatTitle}
               </Link>
             )}{" "}
-            at{" "}
             {centerName && centerSlug && (
-              <Link
-                to={`/centers/${centerSlug}`}
-                className="notouch:hover:underline"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {centerName}
-              </Link>
+              <>
+                at{" "}
+                <Link
+                  to={`/centers/${centerSlug}`}
+                  className="notouch:hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {centerName}
+                </Link>
+              </>
             )}
           </div>
         </div>

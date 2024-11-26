@@ -64,7 +64,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
           duration: { column: talks.duration },
           date: { column: talks.publicationDate },
         },
-      })
+      }),
     );
 
   return withPagination({
@@ -95,12 +95,8 @@ export default function Talks() {
       <AnimatedList className="flex flex-col gap-4 mb-8">
         {talks.map((talk) => (
           <TalkCard
+            {...talk}
             key={talk.slug}
-            id={talk.id}
-            slug={talk.slug}
-            title={talk.title}
-            duration={talk.duration}
-            audioUrl={talk.audioUrl}
             teacherName={talk.teacher?.name ?? null}
             teacherSlug={talk.teacher?.slug ?? null}
             teacherProfileImageUrl={talk.teacher?.profileImageUrl ?? null}

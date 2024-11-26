@@ -44,7 +44,7 @@ const stats: SyncStats = {
 
 async function upsertTeacher(
   scrapedTalk: ScrapedTalk,
-  ctx: ProcessTalkContext
+  ctx: ProcessTalkContext,
 ) {
   const { drizzleDb } = ctx;
 
@@ -95,7 +95,7 @@ async function upsertTeacher(
     let teacherData;
     try {
       teacherData = await withRetry(() =>
-        fetchTeacherFromDharmaseed(teacherId)
+        fetchTeacherFromDharmaseed(teacherId),
       );
     } catch (error) {
       logger.error("Failed to fetch teacher data", error as Error, {
@@ -170,7 +170,7 @@ async function upsertTeacher(
 
 async function processRetreat(
   scrapedTalk: ScrapedTalk,
-  ctx: ProcessTalkContext
+  ctx: ProcessTalkContext,
 ) {
   const { drizzleDb } = ctx;
 
@@ -231,7 +231,7 @@ async function processRetreat(
 
 async function processCenter(
   scrapedTalk: ScrapedTalk,
-  ctx: ProcessTalkContext
+  ctx: ProcessTalkContext,
 ) {
   const { drizzleDb } = ctx;
 
@@ -356,7 +356,7 @@ async function processTalk(scrapedTalk: ScrapedTalk, ctx: ProcessTalkContext) {
           retreatId: retreat?.id ?? null,
           dharmaSeedId: scrapedTalk.talkId,
           duration: sumTime(scrapedTalk.time),
-          publicationDate: sql`CURRENT_TIMESTAMP`,
+          publicationDate: new Date(scrapedTalk.date),
           createdAt: sql`CURRENT_TIMESTAMP`,
           updatedAt: sql`CURRENT_TIMESTAMP`,
         })
@@ -367,7 +367,7 @@ async function processTalk(scrapedTalk: ScrapedTalk, ctx: ProcessTalkContext) {
             title: scrapedTalk.title,
             description: scrapedTalk.description,
             audioUrl,
-            centerId: center?.id ?? null,
+            publicationDate: new Date(scrapedTalk.date),
           },
         });
 
@@ -414,7 +414,7 @@ async function processTalk(scrapedTalk: ScrapedTalk, ctx: ProcessTalkContext) {
 async function processBatch<T>(
   items: T[],
   processor: (item: T) => Promise<void>,
-  options: { batchSize: number }
+  options: { batchSize: number },
 ) {
   const chunks = [];
   for (let i = 0; i < items.length; i += options.batchSize) {
@@ -428,7 +428,7 @@ async function processBatch<T>(
 
 export const syncTalks = async (
   database: D1Database,
-  skipProcessing = false
+  skipProcessing = false,
 ) => {
   const drizzleDb = db(database);
   const ctx: ProcessTalkContext = { database, drizzleDb };
@@ -445,7 +445,7 @@ export const syncTalks = async (
         });
       },
       undefined,
-      skipProcessing
+      skipProcessing,
     );
 
     logger.info("Sync completed");
@@ -507,3 +507,5 @@ export const syncTalks = async (
     });
   }
 };
+
+export { processTalk };
