@@ -1,4 +1,4 @@
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
 import { Link, useLoaderData } from "@remix-run/react";
 import { eq, like, sql } from "drizzle-orm";
 import { motion } from "framer-motion";
@@ -21,6 +21,20 @@ export const headers = {
     sMaxage: "7days",
     staleWhileRevalidate: "1month",
   }),
+};
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
+  if (!data?.retreat) {
+    return [{ title: "Retreat Not Found" }];
+  }
+
+  const { retreat } = data;
+  return [
+    { title: `${retreat.title} - Dharma Radio` },
+    { name: "description", content: retreat.description },
+    { property: "og:title", content: `${retreat.title} - Dharma Radio` },
+    { property: "og:description", content: retreat.description },
+  ];
 };
 
 export async function loader({ params, request, context }: LoaderFunctionArgs) {
@@ -74,7 +88,6 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       order: sort.order,
       config: {
         date: { column: talks.publicationDate },
-        title: { column: talks.title },
         teacher: { column: teachers.name },
       },
     }),
@@ -107,7 +120,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
   const [paginatedTalks, teachersData] = await Promise.all([
     withPagination({
       query: finalQuery.$dynamic(),
-      params: { page, perPage: 20 },
+      params: { page, perPage: 10 },
     }),
     teachersQuery,
   ]);

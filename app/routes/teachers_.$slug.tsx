@@ -14,6 +14,7 @@ import { Tabs } from "~/components/ui/tabs";
 import { CenterCard } from "~/components/center-card";
 import { RetreatCard } from "~/components/retreat-card";
 import { cacheHeader } from "pretty-cache-header";
+import type { MetaFunction } from "@remix-run/cloudflare";
 
 export const headers = {
   "Cache-Control": cacheHeader({
@@ -21,6 +22,23 @@ export const headers = {
     sMaxage: "7days",
     staleWhileRevalidate: "1month",
   }),
+};
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
+  if (!data?.teacher) {
+    return [{ title: "Teacher Not Found" }];
+  }
+
+  const { teacher } = data;
+  return [
+    { title: `${teacher.name} - Dharma Teacher - Dharma Radio` },
+    { name: "description", content: teacher.description },
+    {
+      property: "og:title",
+      content: `${teacher.name} - Dharma Teacher - Dharma Radio`,
+    },
+    { property: "og:description", content: teacher.description },
+  ];
 };
 
 export async function loader({ params, request, context }: LoaderFunctionArgs) {
@@ -112,7 +130,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
   const [paginatedTalks, retreatsData, centersData] = await Promise.all([
     withPagination({
       query: talksQuery.$dynamic(),
-      params: { page, perPage: 20 },
+      params: { page, perPage: 10 },
     }),
     retreatsQuery,
     centersQuery,

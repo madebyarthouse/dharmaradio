@@ -25,38 +25,35 @@ type Manifest = {
     src: string;
     sizes: string;
     type: string;
+    purpose?: string;
   }[];
 };
 
 export const config: Config = {
   productionDomain,
   productionUrl: `https://${productionDomain}`,
-  themeColor: "#527555",
+  themeColor: "#608063",
   manifest: {
     name: "Dharma Radio",
-    shortName: "Dharma Radio",
+    shortName: "DharmaRadio",
     description: "A podcast player for meditation talks",
     backgroundColor: "#ffffff",
-    themeColor: "#527555",
+    themeColor: "#608063",
     display: "standalone",
     orientation: "portrait",
     icons: [
-      // {
-      //   src: "/icons/icon-192x192.png",
-      //   sizes: "192x192",
-      //   type: "image/png",
-      // },
-      // {
-      //   src: "/icons/icon-512x512.png",
-      //   sizes: "512x512",
-      //   type: "image/png",
-      // },
-      // {
-      //   src: "/icons/icon-512x512.png",
-      //   sizes: "512x512",
-      //   type: "image/png",
-      //   purpose: "maskable",
-      // },
+      {
+        src: "/web-app-manifest-192x192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      {
+        src: "/web-app-manifest-512x512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
     ],
   },
 };

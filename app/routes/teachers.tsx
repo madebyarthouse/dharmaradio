@@ -10,6 +10,7 @@ import { AnimatedList } from "~/components/ui/animated-list";
 import { withOrdering } from "~/utils/with-ordering";
 import { getRequestParams } from "~/utils/request-params";
 import { cacheHeader } from "pretty-cache-header";
+import type { MetaFunction } from "@remix-run/cloudflare";
 
 export const headers = {
   "Cache-Control": cacheHeader({
@@ -19,10 +20,27 @@ export const headers = {
   }),
 };
 
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Dharma Teachers - Dharma Radio" },
+    {
+      name: "description",
+      content:
+        "Explore dharma talks from Buddhist teachers and meditation instructors from around the world",
+    },
+    { property: "og:title", content: "Dharma Teachers - Dharma Radio" },
+    {
+      property: "og:description",
+      content:
+        "Explore dharma talks from Buddhist teachers and meditation instructors from around the world",
+    },
+  ];
+};
+
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const { searchQuery, page, sort, hasSearch } = getRequestParams(request, {
-    field: "name",
-    order: "asc",
+    field: "talks",
+    order: "desc",
   });
 
   const database = db(context.cloudflare.env.DB);
@@ -52,7 +70,6 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
         field: sort.field,
         order: sort.order,
         config: {
-          name: { column: teachers.name },
           talks: { column: sql`talks_count` },
           retreats: { column: sql`retreats_count` },
           centers: { column: sql`centers_count` },
@@ -70,7 +87,6 @@ export default function Teachers() {
   const { items: teachers, pagination } = useLoaderData<typeof loader>();
 
   const sortOptions = [
-    { label: "Name", value: "name" },
     { label: "Talks", value: "talks" },
     { label: "Retreats", value: "retreats" },
     { label: "Centers", value: "centers" },
@@ -82,7 +98,7 @@ export default function Teachers() {
       totalItems={pagination.total}
       itemName="teacher"
       sortOptions={sortOptions}
-      defaultSort="name"
+      defaultSort="talks"
       currentPage={pagination.current}
       totalPages={pagination.pages}
     >
