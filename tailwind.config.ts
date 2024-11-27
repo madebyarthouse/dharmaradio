@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       colors: {
-        brand: "#527555",
+        brand: "#608063",
         brandLight: "#B2C5BA",
         brandDark: "#395139",
         text: "#222",

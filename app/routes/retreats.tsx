@@ -8,6 +8,7 @@ import { asc, desc, eq, like, sql } from "drizzle-orm";
 import { AnimatedList } from "~/components/ui/animated-list";
 import { FilterableList } from "~/components/ui/filterable-list";
 import { cacheHeader } from "pretty-cache-header";
+import type { MetaFunction } from "@remix-run/cloudflare";
 
 export const headers = {
   "Cache-Control": cacheHeader({
@@ -17,12 +18,29 @@ export const headers = {
   }),
 };
 
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Meditation Retreats - Dharma Radio" },
+    {
+      name: "description",
+      content:
+        "Browse meditation retreats and listen to retreat talks from teachers around the world",
+    },
+    { property: "og:title", content: "Meditation Retreats - Dharma Radio" },
+    {
+      property: "og:description",
+      content:
+        "Browse meditation retreats and listen to retreat talks from teachers around the world",
+    },
+  ];
+};
+
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const searchQuery = url.searchParams.get("q") || "";
   const page = parseInt(url.searchParams.get("page") || "1");
-  const sortField = url.searchParams.get("sort") || "title";
-  const sortOrder = (url.searchParams.get("order") || "asc") as "asc" | "desc";
+  const sortField = url.searchParams.get("sort") || "talks";
+  const sortOrder = (url.searchParams.get("order") || "desc") as "asc" | "desc";
 
   const database = db(context.cloudflare.env.DB);
 
@@ -73,7 +91,6 @@ export default function Retreats() {
   const sortOptions = [
     { label: "Talks", value: "talks" },
     { label: "Teachers", value: "teachers" },
-    { label: "Title", value: "title" },
   ];
 
   return (
@@ -82,7 +99,7 @@ export default function Retreats() {
       totalItems={pagination.total}
       itemName="retreat"
       sortOptions={sortOptions}
-      defaultSort="title"
+      defaultSort="talks"
       currentPage={pagination.current}
       totalPages={pagination.pages}
     >

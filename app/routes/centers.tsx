@@ -10,6 +10,7 @@ import { withOrdering } from "~/utils/with-ordering";
 import { FilterableList } from "~/components/ui/filterable-list";
 import { AnimatedList } from "~/components/ui/animated-list";
 import { cacheHeader } from "pretty-cache-header";
+import type { MetaFunction } from "@remix-run/cloudflare";
 
 export const headers = {
   "Cache-Control": cacheHeader({
@@ -19,10 +20,27 @@ export const headers = {
   }),
 };
 
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Meditation Centers - Dharma Radio" },
+    {
+      name: "description",
+      content:
+        "Explore dharma talks from meditation centers and Buddhist communities around the world",
+    },
+    { property: "og:title", content: "Meditation Centers - Dharma Radio" },
+    {
+      property: "og:description",
+      content:
+        "Explore dharma talks from meditation centers and Buddhist communities around the world",
+    },
+  ];
+};
+
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const { searchQuery, page, sort, hasSearch } = getRequestParams(request, {
-    field: "name",
-    order: "asc",
+    field: "talks",
+    order: "desc",
   });
 
   const database = db(context.cloudflare.env.DB);
@@ -51,7 +69,6 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
         field: sort.field,
         order: sort.order,
         config: {
-          name: { column: centers.name },
           talks: { column: sql`talks_count` },
           teachers: { column: sql`teachers_count` },
           retreats: { column: sql`retreats_count` },
@@ -72,7 +89,6 @@ export default function Centers() {
     { label: "Talks", value: "talks" },
     { label: "Teachers", value: "teachers" },
     { label: "Retreats", value: "retreats" },
-    { label: "Name", value: "name" },
   ];
 
   return (
@@ -81,7 +97,7 @@ export default function Centers() {
       totalItems={pagination.total}
       itemName="center"
       sortOptions={sortOptions}
-      defaultSort="name"
+      defaultSort="talks"
       currentPage={pagination.current}
       totalPages={pagination.pages}
     >

@@ -1,4 +1,4 @@
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
 import { eq, like, sql } from "drizzle-orm";
 import { motion } from "framer-motion";
@@ -21,6 +21,20 @@ export const headers = {
     sMaxage: "24hours",
     staleWhileRevalidate: "1week",
   }),
+};
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
+  if (!data?.center) {
+    return [{ title: "Center Not Found" }];
+  }
+
+  const { center } = data;
+  return [
+    { title: `${center.name} - Dharma Radio` },
+    { name: "description", content: center.description },
+    { property: "og:title", content: `${center.name} - Dharma Radio` },
+    { property: "og:description", content: center.description },
+  ];
 };
 
 export async function loader({ params, request, context }: LoaderFunctionArgs) {
@@ -113,7 +127,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
   const [paginatedTalks, teachersData, retreatsData] = await Promise.all([
     withPagination({
       query: finalQuery.$dynamic(),
-      params: { page, perPage: 20 },
+      params: { page, perPage: 10 },
     }),
     teachersQuery,
     retreatsQuery,

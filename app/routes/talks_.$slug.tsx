@@ -1,4 +1,4 @@
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
 import { eq, sql } from "drizzle-orm";
 import { motion } from "framer-motion";
@@ -13,10 +13,33 @@ import { cacheHeader } from "pretty-cache-header";
 
 export const headers = {
   "Cache-Control": cacheHeader({
-    maxAge: "1day",
-    sMaxage: "7days",
-    staleWhileRevalidate: "1month",
+    maxAge: "3day",
+    sMaxage: "1month",
+    staleWhileRevalidate: "1year",
   }),
+};
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
+  if (!data?.talk) {
+    return [{ title: "Talk Not Found" }];
+  }
+
+  const { talk } = data;
+  const teacherName = talk.teacher?.name;
+  const title = `${talk.title}${teacherName ? ` - ${teacherName}` : ""} | Dharma Radio`;
+
+  return [
+    { title },
+    {
+      name: "description",
+      content: talk.description || `Listen to ${talk.title} by ${teacherName}`,
+    },
+    { property: "og:title", content: title },
+    {
+      property: "og:description",
+      content: talk.description || `Listen to ${talk.title} by ${teacherName}`,
+    },
+  ];
 };
 
 export async function loader({ params, context }: LoaderFunctionArgs) {
@@ -155,7 +178,7 @@ export default function TalkDetail() {
             </motion.h1>
             <motion.button
               onClick={handlePlayToggle}
-              className="relative w-16 h-16 rounded-full bg-green-600 text-white flex items-center justify-center hover:bg-green-700 transition-colors"
+              className="relative w-16 h-16 rounded-full bg-green-600 text-white flex items-center justify-center hover:bg-green-700 transition-colors flex-shrink-0"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >

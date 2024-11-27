@@ -1,4 +1,4 @@
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
 import { eq, like } from "drizzle-orm";
 import { TalkCard } from "~/components/talk-card";
@@ -17,6 +17,23 @@ export const headers = {
     sMaxage: "24hours",
     staleWhileRevalidate: "1week",
   }),
+};
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Dharma Talks - Dharma Radio" },
+    {
+      name: "description",
+      content:
+        "Listen to thousands of dharma talks from teachers around the world",
+    },
+    { property: "og:title", content: "Dharma Talks - Dharma Radio" },
+    {
+      property: "og:description",
+      content:
+        "Listen to thousands of dharma talks from teachers around the world",
+    },
+  ];
 };
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
