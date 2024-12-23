@@ -36,6 +36,7 @@
     "pretty-cache-header": "^1.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.5",
     "vite": "^5.4.11",
     "vite-tsconfig-paths": "^4.2.1"
   },
