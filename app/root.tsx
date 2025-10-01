@@ -12,6 +12,7 @@ import { Player } from "~/components/Player";
 import stylesheet from "~/tailwind.css?url";
 import { AudioProvider } from "~/contexts/audio-context";
 import { config } from "~/config";
+import { PHProvider } from "./contexts/posthog";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -66,21 +67,23 @@ export default function App() {
         <meta name="og:image:height" content="1200" />
       </head>
       <body className="h-full">
-        <AudioProvider>
-          <div className="min-h-full flex flex-col">
-            <div className="sticky top-0 z-50 bg-brandLight/95 backdrop-blur-sm border-b border-brandLight-200">
-              <Navbar />
-            </div>
-            <main className="flex-1 px-4 py-8 overflow-auto">
-              <div className="max-w-5xl mx-auto">
-                <Outlet />
+        <PHProvider>
+          <AudioProvider>
+            <div className="min-h-full flex flex-col">
+              <div className="sticky top-0 z-50 bg-brandLight/95 backdrop-blur-sm border-b border-brandLight-200">
+                <Navbar />
               </div>
-            </main>
-            <div className="sticky pt-40 bottom-0 z-50">
-              <Player />
+              <main className="flex-1 px-4 py-8 overflow-auto">
+                <div className="max-w-5xl mx-auto">
+                  <Outlet />
+                </div>
+              </main>
+              <div className="sticky pt-40 bottom-0 z-50">
+                <Player />
+              </div>
             </div>
-          </div>
-        </AudioProvider>
+          </AudioProvider>
+        </PHProvider>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
