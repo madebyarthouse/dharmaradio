@@ -190,6 +190,28 @@ export const retreats = sqliteTable(
   }),
 );
 
+export const syncRuns = sqliteTable(
+  "sync_runs",
+  {
+    id: integer("id").primaryKey().notNull(),
+    job: text("job").notNull(),
+    status: text("status").notNull(),
+    startedAt: integer("started_at", { mode: "timestamp" }).notNull(),
+    finishedAt: integer("finished_at", { mode: "timestamp" }).notNull(),
+    durationMs: integer("duration_ms").notNull(),
+    processedCount: integer("processed_count").notNull(),
+    failedCount: integer("failed_count").notNull(),
+    metaJson: text("meta_json").notNull(),
+  },
+  (syncRuns) => ({
+    syncRunsJobIdx: index("sync_runs_job_idx").on(syncRuns.job),
+    syncRunsStatusIdx: index("sync_runs_status_idx").on(syncRuns.status),
+    syncRunsStartedAtIdx: index("sync_runs_started_at_idx").on(
+      syncRuns.startedAt,
+    ),
+  }),
+);
+
 // Relations remain the same
 export const centersRelations = relations(centers, ({ many }) => ({
   talks: many(talks),

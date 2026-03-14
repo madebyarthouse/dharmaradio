@@ -1,5 +1,5 @@
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs } from "react-router";
+import { useLoaderData } from "react-router";
 import { eq, like, sql } from "drizzle-orm";
 import { CenterCard } from "~/components/center-card";
 import { db } from "~/db/client.server";
@@ -10,15 +10,18 @@ import { withOrdering } from "~/utils/with-ordering";
 import { FilterableList } from "~/components/ui/filterable-list";
 import { AnimatedList } from "~/components/ui/animated-list";
 import { cacheHeader } from "pretty-cache-header";
-import type { MetaFunction } from "@remix-run/cloudflare";
+import type { MetaFunction } from "react-router";
+import { withCachedJson } from "~/lib/cache.server";
 
-export const headers = {
+const cacheHeaders = {
   "Cache-Control": cacheHeader({
     maxAge: "6hours",
     sMaxage: "24hours",
     staleWhileRevalidate: "1week",
   }),
 };
+
+export const headers = () => cacheHeaders;
 
 export const meta: MetaFunction = () => {
   return [
@@ -38,48 +41,57 @@ export const meta: MetaFunction = () => {
 };
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const { searchQuery, page, sort, hasSearch } = getRequestParams(request, {
-    field: "talks",
-    order: "desc",
-  });
+  return withCachedJson(
+    context.cloudflare.env.DB_QUERY_CACHE,
+    `centers:${request.url}`,
+    900,
+    async () => {
+      const { searchQuery, page, sort, hasSearch } = getRequestParams(request, {
+        field: "talks",
+        order: "desc",
+      });
 
-  const database = db(context.cloudflare.env.DB);
+      const database = db(context.cloudflare.env.DB);
 
-  const query = database
-    .select({
-      id: centers.id,
-      name: centers.name,
-      slug: centers.slug,
-      description: centers.description,
-      talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
-      teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
-        "teachers_count",
-      ),
-      retreatsCount: sql<number>`count(distinct ${talks.retreatId})`.as(
-        "retreats_count",
-      ),
-      ...totalCountField,
-    })
-    .from(centers)
-    .leftJoin(talks, eq(talks.centerId, centers.id))
-    .where(hasSearch ? like(centers.name, `%${searchQuery}%`) : undefined)
-    .groupBy(centers.id)
-    .orderBy(
-      withOrdering({
-        field: sort.field,
-        order: sort.order,
-        config: {
-          talks: { column: sql`talks_count` },
-          teachers: { column: sql`teachers_count` },
-          retreats: { column: sql`retreats_count` },
-        },
-      }),
-    );
+      const query = database
+        .select({
+          id: centers.id,
+          name: centers.name,
+          slug: centers.slug,
+          description: centers.description,
+          talksCount: sql<number>`count(distinct ${talks.id})`.as(
+            "talks_count",
+          ),
+          teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
+            "teachers_count",
+          ),
+          retreatsCount: sql<number>`count(distinct ${talks.retreatId})`.as(
+            "retreats_count",
+          ),
+          ...totalCountField,
+        })
+        .from(centers)
+        .leftJoin(talks, eq(talks.centerId, centers.id))
+        .where(hasSearch ? like(centers.name, `%${searchQuery}%`) : undefined)
+        .groupBy(centers.id)
+        .orderBy(
+          withOrdering({
+            field: sort.field,
+            order: sort.order,
+            config: {
+              talks: { column: sql`talks_count` },
+              teachers: { column: sql`teachers_count` },
+              retreats: { column: sql`retreats_count` },
+            },
+          }),
+        );
 
-  return withPagination({
-    query: query.$dynamic(),
-    params: { page, perPage: 30 },
-  });
+      return withPagination({
+        query: query.$dynamic(),
+        params: { page, perPage: 30 },
+      });
+    },
+  );
 }
 
 export default function Centers() {

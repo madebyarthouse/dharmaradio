@@ -1,14 +1,15 @@
-import type { LinksFunction } from "@remix-run/cloudflare";
+import type { LinksFunction } from "react-router";
 import {
   Links,
-  LiveReload,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
-} from "@remix-run/react";
+  useLoaderData,
+} from "react-router";
 import { Navbar } from "~/components/Navbar";
 import { Player } from "~/components/Player";
+import { SkyBackground } from "~/components/SkyBackground";
 import stylesheet from "~/tailwind.css?url";
 import { AudioProvider } from "~/contexts/audio-context";
 import { config } from "~/config";
@@ -18,7 +19,14 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
 ];
 
+export const loader = async () => ({
+  posthogApiHost: process.env.PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
+  posthogPublicKey: process.env.PUBLIC_POSTHOG_KEY || null,
+});
+
 export default function App() {
+  const { posthogApiHost, posthogPublicKey } = useLoaderData<typeof loader>();
+
   return (
     <html lang="en" className="h-full">
       <head>
@@ -66,27 +74,26 @@ export default function App() {
         <meta name="og:image:width" content="1200" />
         <meta name="og:image:height" content="1200" />
       </head>
-      <body className="h-full">
-        <PHProvider>
+      <body className="h-full overflow-hidden">
+        <PHProvider apiHost={posthogApiHost} publicKey={posthogPublicKey}>
           <AudioProvider>
-            <div className="min-h-full flex flex-col">
-              <div className="sticky top-0 z-50 bg-brandLight/95 backdrop-blur-sm border-b border-brandLight-200">
-                <Navbar />
+            {/* Sky gradient background with animated birds */}
+            <SkyBackground />
+
+            {/* Main app container */}
+            <div className="relative z-[2] h-full flex flex-col px-10 py-10">
+              <Navbar />
+
+              <div className="flex-1 overflow-auto scrollbar-none">
+                <Outlet />
               </div>
-              <main className="flex-1 px-4 py-8 overflow-auto">
-                <div className="max-w-5xl mx-auto">
-                  <Outlet />
-                </div>
-              </main>
-              <div className="sticky pt-40 bottom-0 z-50">
-                <Player />
-              </div>
+
+              <Player />
             </div>
           </AudioProvider>
         </PHProvider>
         <ScrollRestoration />
         <Scripts />
-        <LiveReload />
       </body>
     </html>
   );

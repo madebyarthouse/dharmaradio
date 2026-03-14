@@ -33,12 +33,19 @@ async function filterNewTalks(
 
 type ProcessPageCallback = (talks: ScrapedTalk[]) => Promise<void>;
 
+export type FetchTalksStats = {
+  pagesFetched: number;
+  totalExisting: number;
+  totalProcessed: number;
+  totalSkipped: number;
+};
+
 export async function fetchTalksFromDharmaseed(
   database: D1Database,
   processPage: ProcessPageCallback,
   maxPages?: number,
   skipProcessing = false,
-): Promise<void> {
+): Promise<FetchTalksStats> {
   let page = 1;
   let shouldContinue = true;
   let totalProcessed = 0;
@@ -138,4 +145,11 @@ export async function fetchTalksFromDharmaseed(
     totalExisting,
     skipProcessing,
   });
+
+  return {
+    pagesFetched: page,
+    totalExisting,
+    totalProcessed,
+    totalSkipped,
+  };
 }

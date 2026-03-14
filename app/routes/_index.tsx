@@ -1,101 +1,24 @@
-import type { MetaFunction } from "@remix-run/cloudflare";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { cacheHeader } from "pretty-cache-header";
-import { useLoaderData } from "@remix-run/react";
-import Sounds from "~/components/sounds";
+import { useLoaderData, Link, useNavigate } from "react-router";
+import { db } from "~/db/client.server";
+import { talks, teachers, centers, retreats } from "~/db/schema";
+import { eq, desc, count } from "drizzle-orm";
+import { Play, Search, BookOpen, Users, Building2, Mic2 } from "lucide-react";
+import { useAudio } from "~/contexts/audio-context";
+import { useState } from "react";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "Dharma Radio" },
+    { title: "Dharma Radio - Your Archive of Wisdom" },
     {
       name: "description",
-      content: "A web player for all talks from dharmaseed.org",
+      content: "Explore thousands of dharma talks from teachers around the world",
     },
-    { name: "og:title", content: "Dharma Radio" },
-    {
-      name: "og:description",
-      content: "A web player for all talks from dharmaseed.org",
-    },
-    { name: "og:image", content: "https://dharmarad.io/og.png" },
-    { name: "og:image:width", content: "1200" },
-    { name: "og:image:height", content: "630" },
-    { name: "og:image:alt", content: "Dharma Radio" },
-    { name: "og:type", content: "website" },
-    { name: "og:url", content: "https://dharmarad.io" },
   ];
 };
 
-const quotes = [
-  {
-    text: "What we make of our life—the sum total of thoughts, emotions, words, and actions that fill the brief interval between birth and death—is our one great creative masterpiece. The beauty and significance of a life well lived consists not in the works we leave behind, or in what history has to say about us. It comes from the quality of conscious experience that infuses our every waking moment, and from the impact we have on others.",
-    source: "Culadasa, The Mind Illuminated",
-  },
-  {
-    text: "Now, insight, we have said, cuts that on which dukkha depends. And dukkha depends on craving. Thus, according to our definition, insight is any way of looking that releases craving.",
-    source: "Rob Burbea, Seeing That Frees",
-  },
-  {
-    text: "Knock, And He'll open the door<br/>Vanish, And He'll make you shine like the sun<br/>Fall, And He'll raise you to the heavens<br/>Become nothing, And He'll turn you into everything.",
-    source: "Rumi",
-  },
-  {
-    text: "Every moment is a fresh beginning.",
-    source: "T.S. Eliot",
-  },
-  {
-    text: "The only way to make sense out of change is to plunge into it, move with it, and join the dance.",
-    source: "Alan Watts",
-  },
-  {
-    text: "The mind is its own place, and in itself can make a Heaven of Hell, a Hell of Heaven.",
-    source: "John Milton, Paradise Lost",
-  },
-  {
-    text: "For things to reveal themselves to us, we need to be ready to abandon our views about them.",
-    source: "Thich Nhat Hanh, Being Peace",
-  },
-  {
-    text: "Walk as if you are kissing the Earth with your feet.",
-    source: "Thich Nhat Hanh, Peace is Every Step",
-  },
-  {
-    text: "It is truth that liberates, not your effort to be free.",
-    source: "Jiddu Krishnamurti, The First and Last Freedom",
-  },
-  {
-    text: "Five decades ago, some very kind people in Japan slipped me the secret: you can dramatically extend life – not by multiplying the number of your years, but by expanding the fullness of your moments.",
-    source: "Shinzen Young, The Science of Enlightenment",
-  },
-  {
-    text: "Anything you avoid in life will come back, over and over again, until you’re willing to face it—to look deeply into its true nature.",
-    source: "Adyashanti, The End of Your World",
-  },
-  {
-    text: "To see a World in a Grain of Sand<br/>And a Heaven in a Wild Flower,<br/>Hold Infinity in the palm of your hand<br/>And Eternity in an hour.",
-    source: "William Blake",
-  },
-  {
-    text: "He who binds to himself a joy<br/>Does the winged life destroy;<br/>But he who kisses the joy as it flies<br/>Lives in eternity's sun rise.",
-    source: "William Blake",
-  },
-  {
-    text: "Taste this, and be henceforth among the gods<br/>Thyself a goddess, not to Earth confined",
-    source: "John Milton, Paradise Lost",
-  },
-  {
-    text: "You are not a drop in the ocean. You are the entire ocean in a drop",
-    source: "Rumi",
-  },
-  {
-    text: "Life shrinks or expands in proportion to one’s courage.",
-    source: "Anais Nin",
-  },
-  {
-    text: "Enlightenment is when a wave realizes it is the ocean.",
-    source: "Thich Nhat Hanh",
-  },
-];
-
-export const headers = {
+const cacheHeaders = {
   "Cache-Control": cacheHeader({
     maxAge: "15min",
     sMaxage: "3hours",
@@ -103,81 +26,273 @@ export const headers = {
   }),
 };
 
-export const loader = async () => {
-  const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+export const headers = () => cacheHeaders;
+
+export async function loader({ context }: LoaderFunctionArgs) {
+  const database = db(context.cloudflare.env.DB);
+
+  // Get stats
+  const [talkStats] = await database
+    .select({ count: count() })
+    .from(talks);
+
+  const [teacherStats] = await database
+    .select({ count: count() })
+    .from(teachers);
+
+  const [centerStats] = await database
+    .select({ count: count() })
+    .from(centers);
+
+  const [retreatStats] = await database
+    .select({ count: count() })
+    .from(retreats);
+
+  // Fetch recent talks
+  const recentTalks = await database
+    .select({
+      id: talks.id,
+      title: talks.title,
+      slug: talks.slug,
+      duration: talks.duration,
+      audioUrl: talks.audioUrl,
+      publicationDate: talks.publicationDate,
+      teacher: {
+        name: teachers.name,
+        slug: teachers.slug,
+        profileImageUrl: teachers.profileImageUrl,
+      },
+    })
+    .from(talks)
+    .leftJoin(teachers, eq(talks.teacherId, teachers.id))
+    .orderBy(desc(talks.publicationDate))
+    .limit(6);
+
+  // Fetch featured teachers (with most talks)
+  const featuredTeachers = await database
+    .select({
+      id: teachers.id,
+      name: teachers.name,
+      slug: teachers.slug,
+      profileImageUrl: teachers.profileImageUrl,
+    })
+    .from(teachers)
+    .limit(8);
 
   return {
-    randomQuote,
+    stats: {
+      talks: talkStats?.count ?? 0,
+      teachers: teacherStats?.count ?? 0,
+      centers: centerStats?.count ?? 0,
+      retreats: retreatStats?.count ?? 0,
+    },
+    recentTalks,
+    featuredTeachers,
   };
-};
+}
 
 export default function Home() {
-  const { randomQuote } = useLoaderData<typeof loader>();
+  const { stats, recentTalks, featuredTeachers } = useLoaderData<typeof loader>();
+  const { playTalk } = useAudio();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/talks?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handlePlayTalk = (talk: typeof recentTalks[0]) => {
+    playTalk({
+      id: String(talk.id),
+      title: talk.title,
+      teacher: talk.teacher?.name,
+      teacherSlug: talk.teacher?.slug,
+      duration: talk.duration,
+      audioUrl: talk.audioUrl,
+    });
+  };
+
+  const formatDuration = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes} min`;
+  };
 
   return (
-    <div className="py-10 px-5 max-w-full md:w-[80ch] mx-auto text-brand flex flex-col items-center">
-      <header className="flex gap-2 w-fit max-w-full md:w-[60ch] justify-center items-center flex-col">
-        <div className="flex flex-col items-center justify-center gap-1">
-          <h1 className="text-4xl font-bold">Dharma Radio</h1>
-          <p className="w-full text-balance mt-5 md:w-[40ch] text-center">
-            is a <strong>pre-release</strong> web application which makes the
-            dharma talks from{" "}
-            <a
-              target="_blank"
-              className="underline underline-offset-2"
-              rel="noreferrer"
-              href="https://dharmaseed.org"
-            >
-              Dharma&nbsp;Seed
-            </a>{" "}
-            more accessible.
+    <div className="max-w-6xl mx-auto py-8 space-y-12">
+      {/* Hero Section with Search */}
+      <section className="text-center space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-5xl md:text-6xl font-light text-text-primary tracking-tight">
+            Explore the Archive
+          </h1>
+          <p className="text-lg text-text-secondary max-w-2xl mx-auto">
+            Discover thousands of dharma talks from teachers around the world
           </p>
         </div>
-      </header>
 
-      <footer className="max-w-full md:w-[65ch] mx-auto flex text-center flex-col items-center justify-center">
-        <div className="pt-5 flex items-center justify-center">
-          <p className="">
-            made by{" "}
-            <a
-              target="_blank"
-              rel="noreferrer"
-              href="https://twitter.com/chrcit"
+        {/* Search Bar */}
+        <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
+          <div className="neumorphic-card-pressed rounded-full flex items-center px-6 py-4 gap-4">
+            <Search size={20} className="text-text-tertiary flex-shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search talks, teachers, topics..."
+              className="flex-1 bg-transparent border-none outline-none text-text-primary placeholder:text-text-tertiary"
+            />
+            <button
+              type="submit"
+              className="neumorphic-button px-6 py-2 rounded-full text-sm font-medium text-text-primary"
             >
-              @<span className="underline underline-offset-2">chrcit</span>
-            </a>
-          </p>
-          <p className="px-2">/</p>
-          <p>
-            follow{" "}
-            <a
-              target="_blank"
-              rel="noreferrer"
-              href="https://twitter.com/dharmarad_io"
-            >
-              @
-              <span className="underline underline-offset-2">dharmarad_io</span>
-            </a>
-          </p>
-        </div>
-      </footer>
-
-      <aside>
-        <hr className="expanding-line max-w-full bg-transparent transition-all my-3" />
-        <Sounds />
-        <hr className="expanding-line h-[1px] max-w-full bg-brand transition-all mt-3" />
-      </aside>
-
-      <section aria-hidden className="flex items-center justify-center py-10">
-        <div className="rounded-full border-4 scale-[0.25] border-brand breath-circle h-[250px] w-[250px]"></div>
+              Search
+            </button>
+          </div>
+        </form>
       </section>
 
-      <section className="text-center max-w-full text-balance w-[60ch] mx-auto overflow-y-auto">
-        <p
-          className="italic"
-          dangerouslySetInnerHTML={{ __html: `"${randomQuote.text}"` }}
-        ></p>
-        <p className="mt-1">– {randomQuote.source}</p>
+      {/* Stats Grid */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <Link to="/talks" className="neumorphic-card rounded-2xl p-6 hover:scale-105 transition-transform">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="neumorphic-button rounded-full w-14 h-14 flex items-center justify-center">
+              <Mic2 size={24} className="text-blue-500" />
+            </div>
+            <div>
+              <div className="text-3xl font-semibold text-text-primary">{stats.talks.toLocaleString()}</div>
+              <div className="text-sm text-text-secondary">Talks</div>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/teachers" className="neumorphic-card rounded-2xl p-6 hover:scale-105 transition-transform">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="neumorphic-button rounded-full w-14 h-14 flex items-center justify-center">
+              <Users size={24} className="text-green-500" />
+            </div>
+            <div>
+              <div className="text-3xl font-semibold text-text-primary">{stats.teachers.toLocaleString()}</div>
+              <div className="text-sm text-text-secondary">Teachers</div>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/centers" className="neumorphic-card rounded-2xl p-6 hover:scale-105 transition-transform">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="neumorphic-button rounded-full w-14 h-14 flex items-center justify-center">
+              <Building2 size={24} className="text-purple-500" />
+            </div>
+            <div>
+              <div className="text-3xl font-semibold text-text-primary">{stats.centers.toLocaleString()}</div>
+              <div className="text-sm text-text-secondary">Centers</div>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/retreats" className="neumorphic-card rounded-2xl p-6 hover:scale-105 transition-transform">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="neumorphic-button rounded-full w-14 h-14 flex items-center justify-center">
+              <BookOpen size={24} className="text-orange-500" />
+            </div>
+            <div>
+              <div className="text-3xl font-semibold text-text-primary">{stats.retreats.toLocaleString()}</div>
+              <div className="text-sm text-text-secondary">Retreats</div>
+            </div>
+          </div>
+        </Link>
+      </section>
+
+      {/* Recent Talks */}
+      <section className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold text-text-primary">Recent Talks</h2>
+          <Link to="/talks" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+            View all →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {recentTalks.map((talk) => (
+            <div key={talk.id} className="neumorphic-card rounded-2xl p-6 space-y-4 group">
+              <div className="flex items-start gap-4">
+                {talk.teacher?.profileImageUrl && (
+                  <div
+                    className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 bg-cover bg-center flex-shrink-0"
+                    style={{
+                      backgroundImage: `url(${talk.teacher.profileImageUrl})`,
+                      filter: "grayscale(90%) contrast(1.05)",
+                    }}
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <Link to={`/talks/${talk.slug}`} className="block">
+                    <h3 className="font-medium text-text-primary line-clamp-2 group-hover:text-blue-600 transition-colors">
+                      {talk.title}
+                    </h3>
+                  </Link>
+                  {talk.teacher?.name && (
+                    <p className="text-sm text-text-secondary mt-1">
+                      {talk.teacher.slug ? (
+                        <Link to={`/teachers/${talk.teacher.slug}`} className="hover:text-text-primary">
+                          {talk.teacher.name}
+                        </Link>
+                      ) : (
+                        talk.teacher.name
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-text-tertiary">{formatDuration(talk.duration)}</span>
+                <button
+                  onClick={() => handlePlayTalk(talk)}
+                  className="neumorphic-button rounded-full w-10 h-10 flex items-center justify-center text-text-primary hover:scale-110 transition-transform"
+                  aria-label="Play"
+                >
+                  <Play size={16} fill="currentColor" className="ml-0.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Featured Teachers */}
+      <section className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold text-text-primary">Featured Teachers</h2>
+          <Link to="/teachers" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+            View all →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+          {featuredTeachers.map((teacher) => (
+            <Link
+              key={teacher.id}
+              to={`/teachers/${teacher.slug}`}
+              className="neumorphic-card rounded-2xl p-4 flex flex-col items-center text-center space-y-3 hover:scale-105 transition-transform"
+            >
+              <div
+                className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 bg-cover bg-center"
+                style={{
+                  backgroundImage: teacher.profileImageUrl
+                    ? `url(${teacher.profileImageUrl})`
+                    : undefined,
+                  filter: "grayscale(90%) contrast(1.05)",
+                }}
+              />
+              <div className="text-xs font-medium text-text-primary line-clamp-2">
+                {teacher.name}
+              </div>
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );

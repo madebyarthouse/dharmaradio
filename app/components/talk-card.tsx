@@ -1,7 +1,7 @@
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 import { Play, Pause, Clock } from "lucide-react";
 import { useAudio } from "~/contexts/audio-context";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 type TalkCardProps = {
   slug: string;
@@ -16,7 +16,7 @@ type TalkCardProps = {
   retreatSlug: string | null;
   audioUrl: string;
   id: number;
-  publicationDate: string;
+  publicationDate: Date | string | null;
 };
 
 export function TalkCard({

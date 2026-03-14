@@ -1,4 +1,4 @@
-import { useSearchParams } from "@remix-run/react";
+import { useSearchParams } from "react-router";
 import { useCallback, useEffect, useState } from "react";
 import debounce from "just-debounce-it";
 

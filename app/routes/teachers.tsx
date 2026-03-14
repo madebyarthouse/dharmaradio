@@ -1,5 +1,5 @@
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs } from "react-router";
+import { useLoaderData } from "react-router";
 import { eq, like, sql } from "drizzle-orm";
 import { TeacherCard } from "~/components/teacher-card";
 import { db } from "~/db/client.server";
@@ -10,15 +10,18 @@ import { AnimatedList } from "~/components/ui/animated-list";
 import { withOrdering } from "~/utils/with-ordering";
 import { getRequestParams } from "~/utils/request-params";
 import { cacheHeader } from "pretty-cache-header";
-import type { MetaFunction } from "@remix-run/cloudflare";
+import type { MetaFunction } from "react-router";
+import { withCachedJson } from "~/lib/cache.server";
 
-export const headers = {
+const cacheHeaders = {
   "Cache-Control": cacheHeader({
     maxAge: "6hours",
     sMaxage: "24hours",
     staleWhileRevalidate: "1week",
   }),
 };
+
+export const headers = () => cacheHeaders;
 
 export const meta: MetaFunction = () => {
   return [
@@ -38,49 +41,58 @@ export const meta: MetaFunction = () => {
 };
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const { searchQuery, page, sort, hasSearch } = getRequestParams(request, {
-    field: "talks",
-    order: "desc",
-  });
+  return withCachedJson(
+    context.cloudflare.env.DB_QUERY_CACHE,
+    `teachers:${request.url}`,
+    900,
+    async () => {
+      const { searchQuery, page, sort, hasSearch } = getRequestParams(request, {
+        field: "talks",
+        order: "desc",
+      });
 
-  const database = db(context.cloudflare.env.DB);
+      const database = db(context.cloudflare.env.DB);
 
-  const query = database
-    .select({
-      id: teachers.id,
-      name: teachers.name,
-      slug: teachers.slug,
-      description: teachers.description,
-      profileImageUrl: teachers.profileImageUrl,
-      talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
-      retreatsCount: sql<number>`count(distinct ${talks.retreatId})`.as(
-        "retreats_count",
-      ),
-      centersCount: sql<number>`count(distinct ${talks.centerId})`.as(
-        "centers_count",
-      ),
-      ...totalCountField,
-    })
-    .from(teachers)
-    .leftJoin(talks, eq(talks.teacherId, teachers.id))
-    .where(hasSearch ? like(teachers.name, `%${searchQuery}%`) : undefined)
-    .groupBy(teachers.id)
-    .orderBy(
-      withOrdering({
-        field: sort.field,
-        order: sort.order,
-        config: {
-          talks: { column: sql`talks_count` },
-          retreats: { column: sql`retreats_count` },
-          centers: { column: sql`centers_count` },
-        },
-      }),
-    );
+      const query = database
+        .select({
+          id: teachers.id,
+          name: teachers.name,
+          slug: teachers.slug,
+          description: teachers.description,
+          profileImageUrl: teachers.profileImageUrl,
+          talksCount: sql<number>`count(distinct ${talks.id})`.as(
+            "talks_count",
+          ),
+          retreatsCount: sql<number>`count(distinct ${talks.retreatId})`.as(
+            "retreats_count",
+          ),
+          centersCount: sql<number>`count(distinct ${talks.centerId})`.as(
+            "centers_count",
+          ),
+          ...totalCountField,
+        })
+        .from(teachers)
+        .leftJoin(talks, eq(talks.teacherId, teachers.id))
+        .where(hasSearch ? like(teachers.name, `%${searchQuery}%`) : undefined)
+        .groupBy(teachers.id)
+        .orderBy(
+          withOrdering({
+            field: sort.field,
+            order: sort.order,
+            config: {
+              talks: { column: sql`talks_count` },
+              retreats: { column: sql`retreats_count` },
+              centers: { column: sql`centers_count` },
+            },
+          }),
+        );
 
-  return withPagination({
-    query: query.$dynamic(),
-    params: { page, perPage: 30 },
-  });
+      return withPagination({
+        query: query.$dynamic(),
+        params: { page, perPage: 30 },
+      });
+    },
+  );
 }
 
 export default function Teachers() {

@@ -1,4 +1,9 @@
-const productionDomain = "dharmarad.io";
+const productionDomain =
+  (typeof process !== "undefined" && process.env.PUBLIC_APP_DOMAIN) ||
+  "dharmarad.io";
+const productionUrl =
+  (typeof process !== "undefined" && process.env.PUBLIC_APP_URL) ||
+  `https://${productionDomain}`;
 
 type Config = {
   productionDomain: string;
@@ -31,7 +36,7 @@ type Manifest = {
 
 export const config: Config = {
   productionDomain,
-  productionUrl: `https://${productionDomain}`,
+  productionUrl,
   themeColor: "#608063",
   manifest: {
     name: "Dharma Radio",

@@ -1,173 +1,212 @@
 # AI Agents Guide
 
-This document describes the AI agents and automation workflows in the Dharma Radio project.
+This repository runs on a single Cloudflare Worker. Agents in this project are scheduled Worker jobs and local maintenance scripts, not public API endpoints.
 
 ## Overview
 
-Dharma Radio uses automated agents for data synchronization and processing. These agents run on Cloudflare Workers with scheduled cron jobs and can be triggered manually via API endpoints.
+Dharma Radio scrapes and indexes talks from dharmaseed.org into Cloudflare D1, caches query results in KV, and serves the application through a React Router 7 Worker runtime.
 
-## Data Sync Agents
+Current architecture:
+
+- One Worker entry: `workers/app.ts`
+- Scheduled jobs dispatch through `scheduled()`
+- Cron mapping lives in `app/cron/jobs.ts`
+- Shared sync orchestration lives in `app/sync/run-sync.ts`
+- D1 is the source of truth
+- KV is cache only
+- `process.env` is used only for string configuration under `nodejs_compat`
+
+Not part of the architecture:
+
+- No `/api/sync` route
+- No second “sync worker”
+- No Queues
+- No Workflows
+
+## Active Agents
 
 ### Teacher Sync Agent
 
-**Location**: `app/sync/sync-teachers.ts`
+Location: `app/sync/sync-teachers.ts`
 
-**Purpose**: Fetches and synchronizes teacher profiles from dharmaseed.org
+Purpose:
 
-**How it works**:
-1. Fetches paginated list of teachers (100 per page)
-2. Parses HTML to extract teacher metadata
-3. Upserts teachers into D1 database (conflict handling on dharmaSeedId)
-4. Updates existing records, inserts new ones
+- Fetches and upserts teacher records from dharmaseed.org into D1
 
-**Key features**:
-- Retry logic with exponential backoff (3 attempts, max 10s delay)
-- Structured logging for observability
-- Batch processing with 1s delay between pages
-- Slug generation from teacher name + ID
+Execution path:
 
-**Manual trigger**: `GET /api/sync?command=teachers`
+1. `workers/app.ts` receives a scheduled event
+2. `app/cron/jobs.ts` maps cron to `syncTeachers`
+3. `app/sync/run-sync.ts` runs the job and persists a `sync_runs` record
+4. Cache epoch is bumped on success
+
+Schedule:
+
+- `0 3 * * *`
 
 ### Talk Sync Agent
 
-**Location**: `app/sync/sync-to-db.ts`
+Location: `app/sync/sync-to-db.ts`
 
-**Purpose**: Fetches and synchronizes dharma talks with all relationships
+Purpose:
 
-**How it works**:
-1. Fetches all teachers from database
-2. For each teacher, fetches their talks from dharmaseed.org RSS feeds
-3. Enriches talk data by fetching retreat and center information
-4. Batch inserts talks into database (50 at a time)
-5. Updates relationships (teacher, center, retreat)
+- Fetches and upserts talks plus teacher, center, and retreat relationships
 
-**Key features**:
-- Parallel processing with configurable concurrency
-- HTML scraping for additional metadata (retreat, center)
-- Retry logic on all network requests
-- Batch processing for efficient database operations
-- Skip processing flag for faster sync (`skipProcessing=true`)
+Execution path:
 
-**Manual trigger**:
-- `GET /api/sync?command=talks`
-- `GET /api/sync?command=talks&skipProcessing=true`
+1. `workers/app.ts` receives a scheduled event
+2. `app/cron/jobs.ts` maps cron to `syncTalks`
+3. `app/sync/run-sync.ts` runs the job and persists a `sync_runs` record
+4. Cache epoch is bumped on success
 
-### Full Sync Agent
+Schedule:
 
-**Location**: `app/routes/api.sync.ts`
+- `0 */6 * * *`
 
-**Purpose**: Orchestrates complete data synchronization
+## Sync Bookkeeping
 
-**How it works**:
-1. Syncs teachers first
-2. Then syncs talks (which depend on teachers)
-3. Returns detailed results for each operation
-4. Continues even if one operation fails (reports all results)
+Location: `app/db/schema.ts`
 
-**Manual trigger**: `GET /api/sync` or `GET /api/sync?command=all`
+`sync_runs` records every scheduled execution with:
 
-## Scheduling
+- `job`
+- `status`
+- `started_at`
+- `finished_at`
+- `duration_ms`
+- `processed_count`
+- `failed_count`
+- `meta_json`
 
-**Cron Configuration** (`wrangler.toml`):
-```
-crons=["0 */6 * * *"]  # Every 6 hours
-```
+If you add a new scheduled job, it must write through `run-sync.ts` so `sync_runs` stays authoritative.
 
-The full sync agent runs automatically every 6 hours to keep data fresh.
+## Caching
 
-## Utility Agents
+### Edge Cache
 
-### HTML Parser (`app/sync/lib/parse-html.ts`)
-- Parses HTML using jsdom (Node.js) or linkedom (Cloudflare Workers)
-- Extracts structured data from dharmaseed.org pages
+Location: `workers/app.ts`
 
-### Retry Handler (`app/sync/lib/retry.ts`)
-- Implements exponential backoff with jitter
-- Configurable max attempts and delay
-- Used by all network operations
+- GET-only SSR cache
+- Versioned via `CF_VERSION_METADATA`
+- Respects `Cache-Control`, `Authorization`, `Set-Cookie`, and `Vary: *`
 
-### Logger (`app/sync/lib/logger.ts`)
-- Structured logging with context
-- Supports info, debug, error levels
-- Includes timing and metadata
+### KV Query Cache
 
-### Batch Processor (`app/sync/lib/batch.ts`)
-- Processes large datasets in chunks
-- Configurable batch size
-- Memory efficient for large syncs
+Location: `app/lib/cache.server.ts`
 
-## Error Handling
+- Binding: `DB_QUERY_CACHE`
+- Used for expensive derived/query payloads
+- Invalidated by cache epoch bump after successful syncs
 
-All agents include:
-- Try-catch blocks around critical operations
-- Structured error logging with context
-- Graceful degradation (continues on non-fatal errors)
-- Retry logic for transient failures
-- HTTP error status codes in API responses
+## Local Maintenance Scripts
 
-## Monitoring & Observability
+These are the manual operator entrypoints. Manual sync does not happen over HTTP.
 
-**Logs**: All agents use structured logging with:
-- Operation name (e.g., "sync-teachers")
-- Timing information (duration)
-- Record counts
-- Error details with stack traces
+### Remote D1 to Local D1
 
-**API Response Format**:
-```json
-{
-  "success": true/false,
-  "results": {
-    "teachers": { "success": true },
-    "talks": { "success": true }
-  },
-  "message": "Sync completed"
-}
+Location: `scripts/db-import-remote-to-local.ts`
+
+Command:
+
+```bash
+pnpm run db:import:remote-to-local
 ```
 
-## Development Tips
+Behavior:
 
-### Testing Sync Locally
+- Confirms before deleting local D1 state unless `--yes`
+- Exports remote D1 to SQL
+- Imports the dump into local D1
 
-1. Ensure local D1 database is initialized:
-   ```bash
-   pnpm d1:init:local
-   ```
+### Local D1 to Remote D1
 
-2. Start dev server:
-   ```bash
-   pnpm dev
-   ```
+Location: `scripts/db-import-local-to-remote.ts`
 
-3. Trigger sync via curl:
-   ```bash
-   curl http://127.0.0.1:8788/api/sync?command=teachers
-   curl http://127.0.0.1:8788/api/sync?command=talks&skipProcessing=true
-   ```
+Command:
 
-### Adding New Sync Agents
+```bash
+pnpm run db:import:local-to-remote
+```
 
-1. Create new file in `app/sync/`
-2. Implement main sync function with D1Database parameter
-3. Add to `api.sync.ts` switch statement
-4. Include retry logic and structured logging
-5. Use batch processing for large datasets
-6. Test locally before deploying
+Behavior:
 
-### Performance Optimization
+- Confirms before overwriting remote D1 unless `--yes`
+- Exports local D1 to SQL
+- Imports the dump into remote D1
 
-- Use `skipProcessing=true` for faster initial sync
-- Adjust batch sizes in `batch.ts` (default: 50)
-- Configure retry delays in `retry.ts`
-- Add indexes to schema for new query patterns
-- Monitor D1 query performance in Wrangler logs
+### Missing Data Backfill
 
-## Future Agent Ideas
+Location: `scripts/backfill-missing-production-data.ts`
 
-Based on `.cursorrules`, planned future agents:
+Command:
 
-1. **Audio File Sync Agent**: Sync audio files to Cloudflare R2 for CDN delivery
-2. **Transcription Agent**: Use AI to transcribe dharma talks
-3. **Analysis Agent**: Analyze talk content and generate metadata
-4. **RSS Feed Generator**: Create custom RSS feeds for users
-5. **Playlist Curator**: Generate personalized playlists based on listening history
+```bash
+pnpm run data:backfill:missing -- --dry-run --teachers --talks
+```
+
+Useful flags:
+
+- `--dry-run`
+- `--teachers`
+- `--talks`
+- `--limit=<n>`
+
+Behavior:
+
+- Runs locally against local D1 only
+- Repairs missing derived fields by rescraping dharmaseed.org
+- Fetches talk listing pages concurrently
+- Separates retreat discovery from core missing-field repair
+- Uses `chalk` and `ora` for progress and summaries
+
+## Development Commands
+
+```bash
+pnpm dev
+pnpm build
+pnpm typecheck
+pnpm lint
+pnpm run d1:init:local
+pnpm run db:migrate
+pnpm run db:migrate:remote
+```
+
+## Rules For Agents
+
+### Runtime Rules
+
+- Do not reintroduce `/api/sync`
+- Do not add a second Worker for cron
+- Keep scheduled jobs inside `workers/app.ts`
+- Keep cron definitions in sync between `wrangler.jsonc` and `app/cron/jobs.ts`
+
+### Database Rules
+
+- D1 is canonical storage
+- KV is cache only
+- Change `app/db/schema.ts` first, then run `pnpm run db:generate`
+- Do not handwrite migrations
+
+### Config Rules
+
+- Use `process.env` only for string config/secrets
+- Use Worker bindings for platform resources:
+  - `env.DB`
+  - `env.DB_QUERY_CACHE`
+  - `env.CF_VERSION_METADATA`
+
+### Local Ops Rules
+
+- Backfill changes should stay local-first
+- Remote writes should happen only through the explicit import script
+- Prefer `--dry-run` first for backfill work
+
+## Future Agent Work
+
+If new automation is added, follow the same shape:
+
+1. Add the scheduled mapping in `app/cron/jobs.ts`
+2. Route execution through `app/sync/run-sync.ts` or an equivalent shared runner
+3. Persist operational metadata to D1
+4. Invalidate cache deliberately
+5. Do not expose the job as a public route unless there is a strong product reason

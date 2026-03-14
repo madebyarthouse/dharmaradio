@@ -1,4 +1,3 @@
-import type { SQLiteSelect } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export type PaginationParams = {
@@ -19,13 +18,22 @@ export const totalCountField = {
   total_count: sql<number>`count(*) OVER()`.as("total_count"),
 };
 
-export async function withPagination<T extends SQLiteSelect>({
+export async function withPagination<TItem>({
   query,
   params,
 }: {
-  query: T;
+  query: {
+    execute: () => Promise<Array<TItem & { total_count: number }>>;
+    limit: (limit: number) => {
+      offset: (
+        offset: number,
+      ) => {
+        execute: () => Promise<Array<TItem & { total_count: number }>>;
+      };
+    };
+  };
   params: PaginationParams;
-}): Promise<PaginatedResult<T>> {
+}): Promise<PaginatedResult<TItem>> {
   const { page = 1, perPage = 20 } = params;
 
   const results = await query
@@ -47,7 +55,7 @@ export async function withPagination<T extends SQLiteSelect>({
 
   // Extract total from first row and remove total_count from results
   const total = Number(results[0].total_count);
-  const items = results.map(({ total_count, ...rest }) => rest) as T[];
+  const items = results.map(({ total_count, ...rest }) => rest) as TItem[];
 
   return {
     items,

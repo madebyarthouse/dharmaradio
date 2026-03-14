@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dharmaradio",
+  "main": "./workers/app.ts",
+  "compatibility_date": "2025-04-04",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "nodejs_compat_populate_process_env"
+  ],
+  "assets": {
+    "directory": "./build/client"
+  },
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "limits": {
+    "cpu_ms": 300000
+  },
+  "triggers": {
+    "crons": ["0 */6 * * *", "0 3 * * *"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dharmaradio",
+      "database_id": "c3eadb2d-f09e-4cf5-a956-ce883afd1614",
+      "migrations_dir": "./app/db/migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "DB_QUERY_CACHE",
+      "id": "00000000000000000000000000000000",
+      "preview_id": "00000000000000000000000000000000"
+    }
+  ]
+}

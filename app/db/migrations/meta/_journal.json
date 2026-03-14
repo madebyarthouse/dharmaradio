@@ -22,6 +22,13 @@
       "when": 1732407340995,
       "tag": "0002_parched_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1773492901377,
+      "tag": "0003_chunky_fabian_cortez",
+      "breakpoints": true
     }
   ]
 }

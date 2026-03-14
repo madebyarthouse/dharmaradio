@@ -1,92 +1,74 @@
-import { Link, useLocation } from "@remix-run/react";
-import { Radio, Menu, X } from "lucide-react";
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Link, useLocation } from "react-router";
+import { Radio } from "lucide-react";
 
 export function Navbar() {
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const links = [
     { path: "/talks", label: "Talks" },
     { path: "/teachers", label: "Teachers" },
     { path: "/retreats", label: "Retreats" },
     { path: "/centers", label: "Centers" },
-  ] as const;
+  ];
 
   return (
-    <nav>
-      <div className="container mx-auto px-4 py-5">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center space-x-2">
-            <img
-              src="/dharmaradio-logo-v0.png"
-              alt=""
-              className="w-14 aspect-square h-14"
-            />
-            <span className="font-serif text-3xl text-green-900">
-              Dharma Radio
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
-            {links.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`text-xl font-medium text-green-900 transition-all ${
-                  location.pathname === link.path
-                    ? "underline"
-                    : "hover:opacity-80"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-green-600 hover:text-green-900 transition-colors"
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+    <header className="flex justify-between items-center mb-8 pb-6">
+      {/* Logo */}
+      <Link
+        to="/"
+        className="flex items-center gap-3 text-text-primary hover:opacity-80 transition-opacity"
+      >
+        <div className="neumorphic-button rounded-full w-12 h-12 flex items-center justify-center">
+          <Radio size={20} className="text-blue-500" />
         </div>
-      </div>
+        <div>
+          <div className="text-lg font-semibold leading-tight">Dharma Radio</div>
+          <div className="text-[0.7rem] text-text-secondary uppercase tracking-wider">
+            Archive
+          </div>
+        </div>
+      </Link>
 
-      {/* Mobile Navigation */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="md:hidden absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-green-200 shadow-lg"
-          >
-            <div className="container mx-auto px-4 py-4">
-              <div className="flex flex-col space-y-4">
-                {links.map((link) => (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`text-sm font-medium p-2 rounded-lg transition-colors ${
-                      location.pathname === link.path
-                        ? "bg-green-100 text-green-900"
-                        : "text-green-600 hover:bg-green-50 hover:text-green-900"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+      {/* Navigation */}
+      <nav className="hidden md:flex items-center gap-2">
+        {links.map((link) => {
+          const isActive = location.pathname.startsWith(link.path);
+          return (
+            <Link
+              key={link.path}
+              to={link.path}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                isActive
+                  ? "neumorphic-card-pressed text-text-primary"
+                  : "text-text-secondary hover:text-text-primary hover:bg-white/40"
+              }`}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Mobile Menu - Simple for now */}
+      <div className="md:hidden flex items-center gap-2">
+        {links.map((link) => {
+          const isActive = location.pathname.startsWith(link.path);
+          return (
+            <Link
+              key={link.path}
+              to={link.path}
+              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                isActive
+                  ? "neumorphic-card-pressed text-text-primary"
+                  : "text-text-secondary"
+              }`}
+            >
+              {link.label.charAt(0)}
+            </Link>
+          );
+        })}
+      </div>
+    </header>
   );
 }
 

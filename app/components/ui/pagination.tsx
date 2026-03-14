@@ -1,4 +1,4 @@
-import { Link, useSearchParams, useLocation } from "@remix-run/react";
+import { Link, useSearchParams, useLocation } from "react-router";
 
 type PaginationProps = {
   currentPage: number;

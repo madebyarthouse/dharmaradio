@@ -1,43 +1,130 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@config "../tailwind.config.ts";
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
 @layer base {
-  :root {
-    --color-brand: #608063;
-    --color-brand-light: #b2c5ba;
-    --color-brand-dark: #395139;
-    --color-text: #222;
-    --color-white: #fff;
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   ::selection {
-    background-color: var(--color-brand);
-    color: var(--color-white);
+    background-color: #2D3748;
+    color: #ffffff;
   }
 
   body {
-    background: radial-gradient(
-        50% 50% at 50% 50%,
-        #ffffff 0%,
-        #ffffff 0%,
-        rgba(82, 117, 85, 0) 0.01%,
-        rgba(82, 117, 85, 0.26) 100%
-      ),
-      #ffffff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #f0f7ff;
+    color: #1A202C;
+  }
+}
+
+@layer utilities {
+  /* Scrollbar utilities */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  /* Enhanced sky gradient background - more neumorphic */
+  .sky-gradient-bg {
+    background:
+      radial-gradient(ellipse at top, rgba(179, 209, 255, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(200, 220, 255, 0.3) 0%, transparent 50%),
+      linear-gradient(180deg, #c8ddff 0%, #e8f2ff 50%, #ffffff 100%);
   }
 
-  .landing-bg {
-    background: radial-gradient(
-        50% 50% at 50% 50%,
-        #ffffff 0%,
-        #ffffff 0%,
-        rgba(82, 117, 85, 0) 0.01%,
-        rgba(82, 117, 85, 0.26) 100%
-      ),
-      #ffffff;
+  /* Neumorphic card style */
+  .neumorphic-card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(240, 247, 255, 0.8));
+    box-shadow:
+      8px 8px 16px rgba(179, 209, 255, 0.3),
+      -8px -8px 16px rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.6);
   }
 
+  .neumorphic-card-pressed {
+    background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(255, 255, 255, 0.9));
+    box-shadow:
+      inset 4px 4px 8px rgba(179, 209, 255, 0.3),
+      inset -4px -4px 8px rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(220, 235, 255, 0.6);
+  }
+
+  .neumorphic-button {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(245, 250, 255, 0.9));
+    box-shadow:
+      4px 4px 8px rgba(179, 209, 255, 0.25),
+      -4px -4px 8px rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    transition: all 0.15s ease;
+  }
+
+  .neumorphic-button:hover {
+    box-shadow:
+      6px 6px 12px rgba(179, 209, 255, 0.3),
+      -6px -6px 12px rgba(255, 255, 255, 0.9);
+  }
+
+  .neumorphic-button:active {
+    box-shadow:
+      inset 3px 3px 6px rgba(179, 209, 255, 0.3),
+      inset -3px -3px 6px rgba(255, 255, 255, 0.9);
+  }
+
+  /* Flying birds animation */
+  @keyframes fly {
+    0% {
+      transform: translate(-10vw, 20vh) scale(0.8);
+    }
+    50% {
+      transform: translate(50vw, 15vh) scale(1);
+    }
+    100% {
+      transform: translate(110vw, 25vh) scale(0.8);
+    }
+  }
+
+  .bird {
+    position: absolute;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .bird-1 {
+    animation: fly 45s linear infinite;
+    top: 10%;
+  }
+
+  .bird-2 {
+    animation: fly 60s linear infinite 10s;
+    top: 30%;
+  }
+
+  .bird-3 {
+    animation: fly 55s linear infinite 25s;
+    top: 15%;
+  }
+
+  /* Waveform bars */
+  .waveform-bar {
+    width: 2px;
+    background-color: rgba(26, 32, 44, 0.15);
+    border-radius: 1px;
+    transition: background-color 0.2s;
+    transform-origin: center;
+  }
+
+  .waveform-bar.played {
+    background-color: #2D3748;
+  }
+
+  /* Legacy animations - keeping for backward compatibility */
   .breath-circle {
     animation: breath-circle 4s ease-in-out 500ms infinite alternate;
   }
@@ -45,14 +132,11 @@
   .expanding-line {
     animation: expanding-line 1s ease-in-out 500ms forwards;
   }
-}
 
-@layer components {
   @keyframes breath-circle {
     0% {
       transform: scale(0.25);
     }
-
     100% {
       transform: scale(1);
     }
@@ -62,7 +146,6 @@
     0% {
       width: 0;
     }
-
     100% {
       width: 100%;
     }

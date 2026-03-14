@@ -1,7 +1,7 @@
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs } from "react-router";
+import { useLoaderData } from "react-router";
 import { eq, sql } from "drizzle-orm";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Globe, Heart, ExternalLink } from "lucide-react";
 import { TalkCard } from "~/components/talk-card";
 import { db } from "~/db/client.server";
@@ -14,15 +14,17 @@ import { Tabs } from "~/components/ui/tabs";
 import { CenterCard } from "~/components/center-card";
 import { RetreatCard } from "~/components/retreat-card";
 import { cacheHeader } from "pretty-cache-header";
-import type { MetaFunction } from "@remix-run/cloudflare";
+import type { MetaFunction } from "react-router";
 
-export const headers = {
+const cacheHeaders = {
   "Cache-Control": cacheHeader({
     maxAge: "1day",
     sMaxage: "7days",
     staleWhileRevalidate: "1month",
   }),
 };
+
+export const headers = () => cacheHeaders;
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   if (!data?.teacher) {

@@ -2,18 +2,33 @@ import { useEffect, useState } from "react";
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 
-export function PHProvider({ children }: { children: React.ReactNode }) {
+type PHProviderProps = {
+  apiHost?: string | null;
+  children: React.ReactNode;
+  publicKey?: string | null;
+};
+
+export function PHProvider({
+  apiHost,
+  children,
+  publicKey,
+}: PHProviderProps) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    posthog.init("phc_65Fx0LC2y0dM34zHimAxI0TyltiOYbXAOr6S3pER5NU", {
-      api_host: "https://eu.i.posthog.com",
+    if (!publicKey) {
+      setHydrated(true);
+      return;
+    }
+
+    posthog.init(publicKey, {
+      api_host: apiHost || "https://eu.i.posthog.com",
       defaults: "2025-05-24",
-      person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well
+      person_profiles: "identified_only",
     });
 
     setHydrated(true);
-  }, []);
+  }, [apiHost, publicKey]);
 
   if (!hydrated) return <>{children}</>;
   return <PostHogProvider client={posthog}>{children}</PostHogProvider>;

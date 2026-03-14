@@ -1,223 +1,162 @@
-import { useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  ChevronUp,
-  ChevronDown,
-} from "lucide-react";
+import { useRef } from "react";
+import { Play, Pause, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import { useAudio } from "~/contexts/audio-context";
-import { Link } from "@remix-run/react";
+import { useAudioWaveform } from "~/hooks/use-audio-waveform";
+import { motion, AnimatePresence } from "motion/react";
 
 export function Player() {
   const {
     currentTalk,
     isPlaying,
     togglePlay,
-    progress,
     currentTime,
     duration,
     seek,
   } = useAudio();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const progressBarRef = useRef<HTMLDivElement>(null);
+
+  const waveformRef = useRef<HTMLDivElement>(null);
+
+  // Generate real waveform from audio file
+  const { waveform, isLoading } = useAudioWaveform(currentTalk?.audioUrl ?? null, 80);
 
   if (!currentTalk) return null;
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${String(secs).padStart(2, "0")}`;
   };
 
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!progressBarRef.current) return;
-
-    const rect = progressBarRef.current.getBoundingClientRect();
+  const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!waveformRef.current) return;
+    const rect = waveformRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = x / rect.width;
     const newTime = percentage * duration;
     seek(newTime);
   };
 
-  const handleProgressDrag = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.buttons !== 1) return;
-    handleProgressClick(e);
-  };
+  const percentPlayed = (currentTime / duration) * 100;
 
   return (
-    <motion.div
-      initial={{ y: 100 }}
-      animate={{ y: 0 }}
-      className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-green-200 shadow-lg"
-    >
-      <div className="container mx-auto p-4">
-        <div className="flex flex-col gap-4">
-          {/* Mobile View */}
-          <div className="md:hidden flex items-center justify-between">
-            <div className="flex-1 max-w-[200px] truncate">
-              <h3 className="font-medium text-green-900 truncate">
-                {currentTalk.title}
-              </h3>
-              <div className="text-sm text-green-600 truncate">
+    <AnimatePresence>
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 100, opacity: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-6rem)] max-w-[1200px] h-24 neumorphic-card rounded-2xl flex items-center px-8 z-50 gap-6"
+      >
+        {/* Track Info */}
+        <div className="flex items-center gap-4 w-[220px] flex-shrink-0">
+          {currentTalk.teacher && (
+            <div
+              className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 bg-cover bg-center flex-shrink-0"
+              style={{
+                backgroundImage: currentTalk.teacher
+                  ? `url(https://images.unsplash.com/photo-1555597408-26bc8e548a46?q=80&w=200&auto=format&fit=crop)`
+                  : undefined,
+                filter: "grayscale(90%) contrast(1.05)",
+                boxShadow: "inset 2px 2px 4px rgba(0,0,0,0.1)",
+              }}
+            />
+          )}
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="text-sm font-semibold text-text-primary truncate">
+              {currentTalk.title}
+            </div>
+            {currentTalk.teacher && (
+              <div className="text-[0.7rem] text-text-secondary font-medium truncate">
                 {currentTalk.teacher}
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={togglePlay}
-                className="w-10 h-10 rounded-full bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-900 flex items-center justify-center transition-colors"
-              >
-                {isPlaying ? (
-                  <Pause size={20} />
-                ) : (
-                  <Play size={20} className="ml-1" />
-                )}
-              </button>
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-10 h-10 rounded-full bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-900 flex items-center justify-center transition-colors"
-              >
-                {isExpanded ? (
-                  <ChevronDown size={20} />
-                ) : (
-                  <ChevronUp size={20} />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Desktop View */}
-          <div className="hidden md:flex flex-row gap-5 items-center justify-between">
-            <div className="flex-1 max-w-[250px]">
-              <div className="flex items-center justify-center space-x-6">
-                <button className="text-green-600 hover:text-green-900 transition-colors">
-                  <SkipBack size={20} />
-                </button>
-                <button
-                  onClick={togglePlay}
-                  className="w-12 h-12 rounded-full bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-900 flex items-center justify-center transition-colors"
-                >
-                  {isPlaying ? (
-                    <Pause size={24} />
-                  ) : (
-                    <Play size={24} className="ml-1" />
-                  )}
-                </button>
-                <button className="text-green-600 hover:text-green-900 transition-colors">
-                  <SkipForward size={20} />
-                </button>
-              </div>
-            </div>
-            <div className="flex flex-col flex-1">
-              <h3 className="font-medium text-green-900">
-                {currentTalk.title}
-              </h3>
-              <div className="flex flex-wrap gap-3 text-sm text-green-600">
-                {currentTalk.teacher && currentTalk.teacherSlug && (
-                  <Link
-                    to={`/teachers/${currentTalk.teacherSlug}`}
-                    className="hover:text-green-900 transition-colors"
-                  >
-                    {currentTalk.teacher}
-                  </Link>
-                )}
-                {currentTalk.centerName && currentTalk.centerSlug && (
-                  <Link
-                    to={`/centers/${currentTalk.centerSlug}`}
-                    className="hover:text-green-900 transition-colors"
-                  >
-                    {currentTalk.centerName}
-                  </Link>
-                )}
-                {currentTalk.retreatTitle && currentTalk.retreatSlug && (
-                  <Link
-                    to={`/retreats/${currentTalk.retreatSlug}`}
-                    className="hover:text-green-900 transition-colors"
-                  >
-                    {currentTalk.retreatTitle}
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div
-            role="button"
-            tabIndex={0}
-            ref={progressBarRef}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowLeft") {
-                seek(currentTime - 10);
-              } else if (e.key === "ArrowRight") {
-                seek(currentTime + 10);
-              } else if (e.key === " ") {
-                e.preventDefault();
-                togglePlay();
-              }
-            }}
-            onClick={handleProgressClick}
-            onMouseMove={handleProgressDrag}
-            className="h-2 bg-green-200 rounded-full cursor-pointer relative group"
-          >
-            <div className="absolute -top-2 -bottom-2 left-0 right-0 group-hover:bg-green-900/5 rounded-full" />
-            <motion.div
-              className="absolute top-0 left-0 h-full bg-green-600 rounded-full"
-              style={{ width: `${progress}%` }}
-            >
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-green-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm" />
-            </motion.div>
-          </div>
-
-          <div className="flex justify-between text-xs text-green-600">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
-
-          {/* Mobile Expanded View */}
-          <AnimatePresence>
-            {isExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="md:hidden overflow-hidden"
-              >
-                <div className="flex flex-col gap-2 py-2">
-                  {currentTalk.teacher && currentTalk.teacherSlug && (
-                    <Link
-                      to={`/teachers/${currentTalk.teacherSlug}`}
-                      className="text-green-600 hover:text-green-900 transition-colors"
-                    >
-                      {currentTalk.teacher}
-                    </Link>
-                  )}
-                  {currentTalk.centerName && currentTalk.centerSlug && (
-                    <Link
-                      to={`/centers/${currentTalk.centerSlug}`}
-                      className="text-green-600 hover:text-green-900 transition-colors"
-                    >
-                      {currentTalk.centerName}
-                    </Link>
-                  )}
-                  {currentTalk.retreatTitle && currentTalk.retreatSlug && (
-                    <Link
-                      to={`/retreats/${currentTalk.retreatSlug}`}
-                      className="text-green-600 hover:text-green-900 transition-colors"
-                    >
-                      {currentTalk.retreatTitle}
-                    </Link>
-                  )}
-                </div>
-              </motion.div>
             )}
-          </AnimatePresence>
+          </div>
         </div>
-      </div>
-    </motion.div>
+
+        {/* Controls */}
+        <div className="flex items-center gap-4">
+          <button
+            className="neumorphic-button rounded-full w-9 h-9 flex items-center justify-center text-text-primary/70 hover:text-text-primary"
+            aria-label="Previous"
+          >
+            <SkipBack size={16} />
+          </button>
+
+          <button
+            onClick={togglePlay}
+            className="neumorphic-button rounded-full w-12 h-12 flex items-center justify-center text-text-primary hover:scale-105 transition-transform"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? (
+              <Pause size={18} fill="currentColor" />
+            ) : (
+              <Play size={18} fill="currentColor" className="ml-0.5" />
+            )}
+          </button>
+
+          <button
+            className="neumorphic-button rounded-full w-9 h-9 flex items-center justify-center text-text-primary/70 hover:text-text-primary"
+            aria-label="Next"
+          >
+            <SkipForward size={16} />
+          </button>
+        </div>
+
+        {/* Progress / Waveform */}
+        <div className="flex-grow flex items-center gap-4">
+          <span className="text-[0.7rem] text-text-secondary tabular-nums w-12 text-right font-medium">
+            {formatTime(currentTime)}
+          </span>
+
+          <div
+            ref={waveformRef}
+            onClick={handleWaveformClick}
+            className="flex-grow h-[40px] flex items-end justify-between cursor-pointer relative gap-[2px] px-2 neumorphic-card-pressed rounded-lg"
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center w-full h-full text-text-tertiary text-xs">
+                Analyzing audio...
+              </div>
+            ) : (
+              waveform.map((height, i) => {
+                const barProgress = (i / waveform.length) * 100;
+                const isPlayed = barProgress < percentPlayed;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ scaleY: 0 }}
+                    animate={{ scaleY: 1 }}
+                    transition={{ delay: i * 0.01, duration: 0.3 }}
+                    className={`flex-1 rounded-t-sm transition-all duration-200 ${
+                      isPlayed
+                        ? "bg-gradient-to-t from-blue-400 to-blue-500"
+                        : "bg-gradient-to-t from-gray-300 to-gray-400"
+                    }`}
+                    style={{
+                      height: `${height}%`,
+                      minHeight: "4px",
+                      opacity: isPlayed ? 0.9 : 0.5,
+                    }}
+                  />
+                );
+              })
+            )}
+          </div>
+
+          <span className="text-[0.7rem] text-text-secondary tabular-nums w-12 font-medium">
+            {formatTime(duration)}
+          </span>
+        </div>
+
+        {/* Volume button */}
+        <button
+          className="neumorphic-button rounded-full w-9 h-9 flex items-center justify-center text-text-primary/70 hover:text-text-primary ml-2"
+          aria-label="Volume"
+        >
+          <Volume2 size={16} />
+        </button>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 

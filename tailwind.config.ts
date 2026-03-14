@@ -14,22 +14,44 @@ export default {
     },
     extend: {
       colors: {
+        // New sky-themed color system
+        sky: {
+          from: "#b3d1ff",
+          to: "#ffffff",
+          bg: "#f0f7ff",
+        },
+        text: {
+          primary: "#1A202C",
+          secondary: "rgba(26, 32, 44, 0.7)",
+          tertiary: "rgba(26, 32, 44, 0.4)",
+        },
+        accent: "#2D3748",
+        overlay: "rgba(255, 255, 255, 0.1)",
+        player: {
+          bg: "rgba(255, 255, 255, 0.85)",
+        },
+        // Keep old colors for backward compatibility
         brand: "#608063",
         brandLight: "#B2C5BA",
         brandDark: "#395139",
-        text: "#222",
       },
       fontFamily: {
         sans: [
           "Inter",
-          "ui-sans-serif",
+          "-apple-system",
+          "BlinkMacSystemFont",
           "system-ui",
           "sans-serif",
-          "Apple Color Emoji",
-          "Segoe UI Emoji",
-          "Segoe UI Symbol",
-          "Noto Color Emoji",
         ],
+        display: [
+          "Inter",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "sans-serif",
+        ],
+      },
+      backdropBlur: {
+        glass: "20px",
       },
     },
   },

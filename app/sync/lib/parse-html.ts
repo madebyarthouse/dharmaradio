@@ -66,24 +66,13 @@ export const parseTalksFromHtml = (html: string): ScrapedTalk[] => {
       ? parseInt(retreatUrl.split("/retreats/").pop()?.replace("/", "") ?? "0")
       : null;
 
-    if (!retreatId) {
-      console.debug({
-        links: linksRow?.innerHTML,
-        retreat,
-        retreatUrl,
-        centerUrl,
-        title,
-        talkId,
-      });
-    }
-
     // Parse audio URL
     const audioUrl =
       talk.querySelector(".talkbutton a")?.getAttribute("href") ?? null;
 
     // Validate required fields
     if (!talkId || !title || !teacher || !time || !date) {
-      console.warn("Skipping invalid talk:", {
+      logger.warn("Skipping invalid talk", {
         title,
         teacher,
         time,
@@ -94,10 +83,9 @@ export const parseTalksFromHtml = (html: string): ScrapedTalk[] => {
     }
 
     // Log problematic talks for debugging
-    if (!retreatId && centerText.includes("retreat")) {
+    if (retreatUrl && !retreatId) {
       logger.warn("Failed to parse retreat ID", {
         html: linksRow?.innerHTML,
-        centerText,
         retreat,
         retreatUrl,
         title,

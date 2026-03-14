@@ -8,3 +8,5 @@ build
 .cache
 .dev.vars
 .DS_Store
+.react-router
+*.tsbuildinfo

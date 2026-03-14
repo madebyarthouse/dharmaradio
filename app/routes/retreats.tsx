@@ -1,5 +1,5 @@
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs } from "react-router";
+import { useLoaderData } from "react-router";
 import { RetreatCard } from "~/components/retreat-card";
 import { db } from "~/db/client.server";
 import { retreats, talks } from "~/db/schema";
@@ -8,15 +8,18 @@ import { asc, desc, eq, like, sql } from "drizzle-orm";
 import { AnimatedList } from "~/components/ui/animated-list";
 import { FilterableList } from "~/components/ui/filterable-list";
 import { cacheHeader } from "pretty-cache-header";
-import type { MetaFunction } from "@remix-run/cloudflare";
+import type { MetaFunction } from "react-router";
+import { withCachedJson } from "~/lib/cache.server";
 
-export const headers = {
+const cacheHeaders = {
   "Cache-Control": cacheHeader({
     maxAge: "6hours",
     sMaxage: "24hours",
     staleWhileRevalidate: "1week",
   }),
 };
+
+export const headers = () => cacheHeaders;
 
 export const meta: MetaFunction = () => {
   return [
@@ -36,53 +39,63 @@ export const meta: MetaFunction = () => {
 };
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const url = new URL(request.url);
-  const searchQuery = url.searchParams.get("q") || "";
-  const page = parseInt(url.searchParams.get("page") || "1");
-  const sortField = url.searchParams.get("sort") || "talks";
-  const sortOrder = (url.searchParams.get("order") || "desc") as "asc" | "desc";
+  return withCachedJson(
+    context.cloudflare.env.DB_QUERY_CACHE,
+    `retreats:${request.url}`,
+    900,
+    async () => {
+      const url = new URL(request.url);
+      const searchQuery = url.searchParams.get("q") || "";
+      const page = Number.parseInt(url.searchParams.get("page") || "1", 10);
+      const sortField = url.searchParams.get("sort") || "talks";
+      const sortOrder = (url.searchParams.get("order") || "desc") as
+        | "asc"
+        | "desc";
 
-  const database = db(context.cloudflare.env.DB);
+      const database = db(context.cloudflare.env.DB);
 
-  // Build base query with relations
-  const query = database
-    .select({
-      id: retreats.id,
-      slug: retreats.slug,
-      title: retreats.title,
-      description: retreats.description,
-      talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
-      teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
-        "teachers_count",
-      ),
-      ...totalCountField,
-    })
-    .from(retreats)
-    .leftJoin(talks, eq(talks.retreatId, retreats.id))
-    .where(
-      searchQuery.length >= 2
-        ? like(retreats.title, `%${searchQuery}%`)
-        : undefined,
-    )
-    .groupBy(retreats.id)
-    .orderBy(
-      sortField === "talks"
-        ? sortOrder === "asc"
-          ? asc(sql`talks_count`)
-          : desc(sql`talks_count`)
-        : sortField === "teachers"
-          ? sortOrder === "asc"
-            ? asc(sql`teachers_count`)
-            : desc(sql`teachers_count`)
-          : sortOrder === "asc"
-            ? asc(retreats.title)
-            : desc(retreats.title),
-    );
+      const query = database
+        .select({
+          id: retreats.id,
+          slug: retreats.slug,
+          title: retreats.title,
+          description: retreats.description,
+          talksCount: sql<number>`count(distinct ${talks.id})`.as(
+            "talks_count",
+          ),
+          teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
+            "teachers_count",
+          ),
+          ...totalCountField,
+        })
+        .from(retreats)
+        .leftJoin(talks, eq(talks.retreatId, retreats.id))
+        .where(
+          searchQuery.length >= 2
+            ? like(retreats.title, `%${searchQuery}%`)
+            : undefined,
+        )
+        .groupBy(retreats.id)
+        .orderBy(
+          sortField === "talks"
+            ? sortOrder === "asc"
+              ? asc(sql`talks_count`)
+              : desc(sql`talks_count`)
+            : sortField === "teachers"
+              ? sortOrder === "asc"
+                ? asc(sql`teachers_count`)
+                : desc(sql`teachers_count`)
+              : sortOrder === "asc"
+                ? asc(retreats.title)
+                : desc(retreats.title),
+        );
 
-  return withPagination({
-    query: query.$dynamic(),
-    params: { page, perPage: 20 },
-  });
+      return withPagination({
+        query: query.$dynamic(),
+        params: { page, perPage: 20 },
+      });
+    },
+  );
 }
 
 export default function Retreats() {

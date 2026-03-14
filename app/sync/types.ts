@@ -28,3 +28,23 @@ export type ScrapedTalk = Talk & {
   centerSubdomain: string | null;
   retreatId: number | null;
 };
+
+export type SyncExecutionResult = {
+  failedCount: number;
+  job: "syncTalks" | "syncTeachers";
+  meta: Record<string, unknown>;
+  processedCount: number;
+  status: "success" | "failure";
+};
+
+export type SyncMode = "full" | "incremental";
+
+export type SyncTeachersOptions = {
+  maxPages?: number;
+};
+
+export type SyncTalksOptions = {
+  maxPages?: number;
+  mode?: SyncMode;
+  skipProcessing?: boolean;
+};
