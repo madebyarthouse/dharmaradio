@@ -1,5 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  "account_id": "2c9fb1653ddb6954dedcb6ece9f5affe",
   "name": "dharmaradio",
   "main": "./workers/app.ts",
   "compatibility_date": "2025-04-04",
@@ -26,15 +27,15 @@
     {
       "binding": "DB",
       "database_name": "dharmaradio",
-      "database_id": "c3eadb2d-f09e-4cf5-a956-ce883afd1614",
+      "database_id": "734fc32e-ec13-439e-b211-d9131fc1bf96",
       "migrations_dir": "./app/db/migrations"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "DB_QUERY_CACHE",
-      "id": "00000000000000000000000000000000",
-      "preview_id": "00000000000000000000000000000000"
+      "id": "c6b2f2e807e845568a563a5ec0781cee",
+      "preview_id": "c6b656625d1a4f3cb3cfab85c88e880d"
     }
   ]
 }
