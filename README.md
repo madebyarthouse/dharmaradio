@@ -1,24 +1,24 @@
-# Welcome to Remix!
+# Dharma Radio
 
-- [Remix Docs](https://remix.run/docs)
+A browsable audio platform for dharma talks from [dharmaseed.org](https://dharmaseed.org). Built with React Router 7 on Cloudflare Workers, it scrapes and indexes teachers, talks, centers, and retreats into D1, with KV caching for performance.
+
+Scheduled cron jobs keep content synchronized. The app uses edge caching for fast global delivery.
 
 ## Development
 
-You will be utilizing Wrangler for local development to emulate the Cloudflare runtime. This is already wired up in your package.json as the `dev` script:
-
-```sh
-# start the remix dev server and wrangler
-npm run dev
+```bash
+pnpm install
+pnpm dev                    # Start local server
+pnpm run d1:init:local     # Initialize local database
+pnpm run db:migrate        # Run migrations
 ```
 
-Open up [http://127.0.0.1:8788](http://127.0.0.1:8788) and you should be ready to go!
+Open [http://127.0.0.1:8788](http://127.0.0.1:8788)
 
 ## Deployment
-
-Dharma Radio now deploys as a single Cloudflare Worker, not a Cloudflare Pages project.
-
-Deploy with Wrangler:
 
 ```bash
 pnpm run deploy
 ```
+
+See [CLAUDE.md](CLAUDE.md) for architecture details and operational notes.
