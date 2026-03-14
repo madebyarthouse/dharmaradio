@@ -84,7 +84,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
       return withPagination({
         query: query.$dynamic(),
-        params: { page, perPage: 20 },
+        params: { page, perPage: 100 },
       });
     },
   );
@@ -129,17 +129,17 @@ export default function Retreats() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 md:px-8 py-8 md:py-16">
+    <div className="max-w-6xl mx-auto px-6 md:px-8 py-6 md:py-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8 md:mb-16"
+        className="mb-6"
       >
-        <h1 className="text-5xl md:text-7xl font-serif font-light text-text-primary mb-3 md:mb-4 tracking-tight leading-none">
+        <h1 className="text-4xl md:text-5xl font-serif font-light text-text-primary mb-2 tracking-tight leading-none">
           Retreats
         </h1>
-        <p className="text-text-tertiary text-base md:text-lg font-light tracking-wide">
+        <p className="text-text-tertiary text-sm font-light tracking-wide">
           {pagination.total.toLocaleString()} meditation retreats
         </p>
       </motion.div>
@@ -149,7 +149,7 @@ export default function Retreats() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
-        className="mb-8 md:mb-12 flex flex-col md:flex-row items-start md:items-end justify-between gap-4 md:gap-8 pb-6 border-b border-text-primary/10"
+        className="mb-6 flex flex-col md:flex-row items-start md:items-end justify-between gap-3 md:gap-6 pb-4 border-b border-text-primary/10"
       >
         <form onSubmit={handleSearch} className="w-full md:flex-1 md:max-w-sm">
           <input

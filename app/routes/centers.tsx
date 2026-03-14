@@ -87,7 +87,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
       return withPagination({
         query: query.$dynamic(),
-        params: { page, perPage: 30 },
+        params: { page, perPage: 100 },
       });
     },
   );
@@ -132,17 +132,17 @@ export default function Centers() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 md:px-8 py-8 md:py-16">
+    <div className="max-w-6xl mx-auto px-6 md:px-8 py-6 md:py-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8 md:mb-16"
+        className="mb-6"
       >
-        <h1 className="text-5xl md:text-7xl font-serif font-light text-text-primary mb-3 md:mb-4 tracking-tight leading-none">
+        <h1 className="text-4xl md:text-5xl font-serif font-light text-text-primary mb-2 tracking-tight leading-none">
           Centers
         </h1>
-        <p className="text-text-tertiary text-base md:text-lg font-light tracking-wide">
+        <p className="text-text-tertiary text-sm font-light tracking-wide">
           {pagination.total.toLocaleString()} meditation centers
         </p>
       </motion.div>
@@ -152,7 +152,7 @@ export default function Centers() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
-        className="mb-8 md:mb-12 flex flex-col md:flex-row items-start md:items-end justify-between gap-4 md:gap-8 pb-6 border-b border-text-primary/10"
+        className="mb-6 flex flex-col md:flex-row items-start md:items-end justify-between gap-3 md:gap-6 pb-4 border-b border-text-primary/10"
       >
         <form onSubmit={handleSearch} className="w-full md:flex-1 md:max-w-sm">
           <input
@@ -160,11 +160,11 @@ export default function Centers() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search centers..."
-            className="w-full px-0 py-2.5 border-b-2 border-text-primary/15 bg-transparent focus:border-text-primary/40 focus:outline-none text-text-primary placeholder:text-text-tertiary/60 transition-colors text-sm md:text-base"
+            className="w-full px-0 py-2 border-b border-text-primary/15 bg-transparent focus:border-text-primary/40 focus:outline-none text-text-primary placeholder:text-text-tertiary/60 transition-colors text-sm"
           />
         </form>
 
-        <div className="flex items-center gap-1 text-xs md:text-sm tracking-wide overflow-x-auto w-full md:w-auto">
+        <div className="flex items-center gap-1 text-xs tracking-wide overflow-x-auto w-full md:w-auto">
           <button
             onClick={() => handleSort("talks")}
             className={`px-3 py-2 transition-colors cursor-pointer ${
@@ -207,31 +207,22 @@ export default function Centers() {
             key={center.id}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: index * 0.01, duration: 0.3 }}
+            transition={{ delay: index * 0.005, duration: 0.2 }}
             className="group border-b border-text-primary/8 hover:bg-text-primary/[0.015] transition-all"
           >
-            <Link to={`/centers/${center.slug}`} className="block py-5">
-              <div className="flex items-start">
+            <Link to={`/centers/${center.slug}`} className="block py-3">
+              <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xl font-light text-text-primary group-hover:text-text-primary/60 transition-colors leading-tight mb-2.5">
+                  <h3 className="text-sm font-light text-text-primary group-hover:text-text-primary/60 transition-colors leading-snug line-clamp-1">
                     {center.name}
                   </h3>
+                </div>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-text-tertiary tracking-wide">
-                    <span>{Number(center.talksCount)} talks</span>
-                    {Number(center.teachersCount) > 0 && (
-                      <>
-                        <span className="text-text-tertiary/40">·</span>
-                        <span>{Number(center.teachersCount)} teachers</span>
-                      </>
-                    )}
-                    {Number(center.retreatsCount) > 0 && (
-                      <>
-                        <span className="text-text-tertiary/40">·</span>
-                        <span>{Number(center.retreatsCount)} retreats</span>
-                      </>
-                    )}
-                  </div>
+                <div className="hidden md:flex items-center gap-3 text-xs text-text-tertiary shrink-0">
+                  <span>{Number(center.talksCount)} talks</span>
+                  {Number(center.teachersCount) > 0 && (
+                    <span>{Number(center.teachersCount)} teachers</span>
+                  )}
                 </div>
               </div>
             </Link>
@@ -244,24 +235,24 @@ export default function Centers() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="pt-12 pb-4 flex items-center justify-between border-t border-text-primary/10 mt-8"
+          className="pt-6 pb-4 flex items-center justify-between border-t border-text-primary/10 mt-6"
         >
           <button
             onClick={() => goToPage(Math.max(1, pagination.current - 1))}
             disabled={pagination.current === 1}
-            className="px-5 py-2.5 text-sm text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer tracking-wide"
+            className="px-4 py-2 text-xs text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             ← Previous
           </button>
 
-          <div className="text-sm text-text-tertiary tracking-wide">
+          <div className="text-xs text-text-tertiary">
             {pagination.current} / {pagination.pages}
           </div>
 
           <button
             onClick={() => goToPage(Math.min(pagination.pages, pagination.current + 1))}
             disabled={pagination.current === pagination.pages}
-            className="px-5 py-2.5 text-sm text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer tracking-wide"
+            className="px-4 py-2 text-xs text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             Next →
           </button>

@@ -277,74 +277,65 @@ export default function Talks() {
               key={talk.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: index * 0.01, duration: 0.3 }}
+              transition={{ delay: index * 0.005, duration: 0.2 }}
               className="group border-b border-text-primary/8 hover:bg-text-primary/[0.015] transition-all"
             >
-              <div className="py-5 flex items-start gap-5">
+              <div className="py-3 flex items-center gap-3">
                 {/* Play Button */}
                 <button
                   onClick={() => handlePlayTalk(talk)}
-                  className="shrink-0 mt-0.5 w-9 h-9 rounded-full border border-text-primary/25 flex items-center justify-center hover:border-text-primary hover:bg-text-primary/5 active:bg-text-primary active:text-white transition-all cursor-pointer"
+                  className="shrink-0 w-7 h-7 rounded-full border border-text-primary/20 flex items-center justify-center hover:border-text-primary hover:bg-text-primary/5 active:bg-text-primary active:text-white transition-all cursor-pointer"
                   aria-label={isCurrentlyPlaying ? "Pause" : "Play"}
                 >
                   {isCurrentlyPlaying ? (
                     <motion.div
                       animate={{ scale: [1, 1.2, 1] }}
                       transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                      className="w-2 h-2 bg-text-primary rounded-full"
+                      className="w-1.5 h-1.5 bg-text-primary rounded-full"
                     />
                   ) : (
-                    <Play size={13} fill="currentColor" className="ml-0.5" />
+                    <Play size={11} fill="currentColor" className="ml-0.5" />
                   )}
                 </button>
+
+                {/* Teacher Profile Image */}
+                {talk.teacher?.profileImageUrl && (
+                  <Link
+                    to={`/teachers/${talk.teacher.slug}`}
+                    className="shrink-0 w-7 h-7 rounded-full overflow-hidden bg-text-primary/5"
+                  >
+                    <img
+                      src={talk.teacher.profileImageUrl}
+                      alt={talk.teacher.name}
+                      className="w-full h-full object-cover grayscale opacity-80"
+                    />
+                  </Link>
+                )}
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <Link
                     to={`/talks/${talk.slug}`}
-                    className="block group/link mb-2.5"
+                    className="block group/link"
                   >
-                    <h3 className="text-xl font-light text-text-primary group-hover/link:text-text-primary/60 transition-colors leading-tight">
+                    <h3 className="text-sm font-light text-text-primary group-hover/link:text-text-primary/60 transition-colors leading-snug line-clamp-1">
                       {talk.title}
                     </h3>
                   </Link>
+                </div>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-text-tertiary tracking-wide">
-                    {talk.teacher?.name && (
-                      <Link
-                        to={`/teachers/${talk.teacher.slug}`}
-                        className="hover:text-text-secondary transition-colors font-medium"
-                      >
-                        {talk.teacher.name}
-                      </Link>
-                    )}
-                    {talk.center?.name && (
-                      <>
-                        <span className="text-text-tertiary/40">·</span>
-                        <Link
-                          to={`/centers/${talk.center.slug}`}
-                          className="hover:text-text-secondary transition-colors"
-                        >
-                          {talk.center.name}
-                        </Link>
-                      </>
-                    )}
-                    {talk.retreat?.title && (
-                      <>
-                        <span className="text-text-tertiary/40">·</span>
-                        <Link
-                          to={`/retreats/${talk.retreat.slug}`}
-                          className="hover:text-text-secondary transition-colors italic"
-                        >
-                          {talk.retreat.title}
-                        </Link>
-                      </>
-                    )}
-                    <span className="text-text-tertiary/40">·</span>
-                    <span>{formatDate(talk.publicationDate)}</span>
-                    <span className="text-text-tertiary/40">·</span>
-                    <span className="tabular-nums">{formatDuration(talk.duration)}</span>
-                  </div>
+                {/* Metadata - Horizontal */}
+                <div className="hidden md:flex items-center gap-3 text-xs text-text-tertiary shrink-0">
+                  {talk.teacher?.name && (
+                    <Link
+                      to={`/teachers/${talk.teacher.slug}`}
+                      className="hover:text-text-secondary transition-colors w-[100px] truncate"
+                    >
+                      {talk.teacher.name}
+                    </Link>
+                  )}
+                  <span className="tabular-nums w-[80px]">{formatDate(talk.publicationDate)}</span>
+                  <span className="tabular-nums w-[50px]">{formatDuration(talk.duration)}</span>
                 </div>
               </div>
             </motion.div>
@@ -357,24 +348,24 @@ export default function Talks() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="pt-12 pb-4 flex items-center justify-between border-t border-text-primary/10 mt-8"
+          className="pt-6 pb-4 flex items-center justify-between border-t border-text-primary/10 mt-6"
         >
           <button
             onClick={() => goToPage(Math.max(1, pagination.current - 1))}
             disabled={pagination.current === 1}
-            className="px-5 py-2.5 text-sm text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer tracking-wide"
+            className="px-4 py-2 text-xs text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             ← Previous
           </button>
 
-          <div className="text-sm text-text-tertiary tracking-wide">
+          <div className="text-xs text-text-tertiary">
             {pagination.current} / {pagination.pages}
           </div>
 
           <button
             onClick={() => goToPage(Math.min(pagination.pages, pagination.current + 1))}
             disabled={pagination.current === pagination.pages}
-            className="px-5 py-2.5 text-sm text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer tracking-wide"
+            className="px-4 py-2 text-xs text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             Next →
           </button>
