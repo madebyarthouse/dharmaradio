@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { db } from "../db/client.server";
 import { centers, retreats, talks, teachers } from "../db/schema";
-import type { SyncExecutionResult } from "./types";
+import type { SyncExecutionResult, SyncTalksOptions } from "./types";
 import { fetchTalksFromDharmaseed } from "./lib/fetch-talks";
 import { fetchTeacherFromDharmaseed } from "./lib/fetch-teacher";
 import { Logger } from "./lib/logger";
@@ -10,6 +10,11 @@ import type { ScrapedTalk } from "./lib/types";
 import { dharmaSeedBase, slugify, sumTime } from "./lib/utils";
 
 const logger = new Logger("sync-to-db");
+
+function normalizeAudioUrl(audioUrl: string | null) {
+  if (!audioUrl) return null;
+  return audioUrl.startsWith("http") ? audioUrl : `${dharmaSeedBase}${audioUrl}`;
+}
 
 type Failure = {
   error: string;
@@ -242,9 +247,15 @@ export async function processTalk(
       return null;
     });
 
-    const audioUrl = scrapedTalk.audioUrl?.startsWith("http")
-      ? scrapedTalk.audioUrl
-      : `${dharmaSeedBase}${scrapedTalk.audioUrl}`;
+    const normalizedAudioUrl = normalizeAudioUrl(scrapedTalk.audioUrl);
+
+    if (!normalizedAudioUrl) {
+      logger.warn("Skipping talk without audio URL", {
+        talkId: scrapedTalk.talkId,
+        title: scrapedTalk.title,
+      });
+      return;
+    }
 
     await ctx.drizzleDb
       .insert(talks)
@@ -252,7 +263,7 @@ export async function processTalk(
         title: scrapedTalk.title,
         slug: slugify(scrapedTalk.title, scrapedTalk.talkId),
         description: scrapedTalk.description,
-        audioUrl,
+        audioUrl: normalizedAudioUrl,
         externalGuid: `dharmaseed-talk-${scrapedTalk.talkId}`,
         teacherId: teacher.id,
         centerId: center?.id ?? null,
@@ -266,9 +277,14 @@ export async function processTalk(
       .onConflictDoUpdate({
         target: talks.dharmaSeedId,
         set: {
-          title: scrapedTalk.title,
+          centerId: center?.id ?? null,
           description: scrapedTalk.description,
-          audioUrl,
+          duration: sumTime(scrapedTalk.time),
+          retreatId: retreat?.id ?? null,
+          slug: slugify(scrapedTalk.title, scrapedTalk.talkId),
+          teacherId: teacher.id,
+          title: scrapedTalk.title,
+          audioUrl: normalizedAudioUrl,
           publicationDate: new Date(scrapedTalk.date),
           updatedAt: sql`CURRENT_TIMESTAMP`,
         },
@@ -305,14 +321,19 @@ const processBatch = async <T>(
 
 export const syncTalks = async (
   database: D1Database,
-  skipProcessing = false,
+  options: SyncTalksOptions = {},
 ): Promise<SyncExecutionResult> => {
   const drizzleDb = db(database);
   const stats = createEmptyStats();
   const ctx: ProcessTalkContext = { drizzleDb, stats };
   const startTime = Date.now();
+  const {
+    maxPages,
+    mode = "incremental",
+    skipProcessing = false,
+  } = options;
 
-  logger.info("Starting sync", { skipProcessing });
+  logger.info("Starting sync", { maxPages, mode, skipProcessing });
 
   const fetchStats = await fetchTalksFromDharmaseed(
     database,
@@ -321,8 +342,11 @@ export const syncTalks = async (
         batchSize: 10,
       });
     },
-    undefined,
-    skipProcessing,
+    {
+      maxPages,
+      mode,
+      skipProcessing,
+    },
   );
 
   const duration = Date.now() - startTime;
@@ -349,6 +373,8 @@ export const syncTalks = async (
       centers: stats.centers,
       durationMs: duration,
       fetchStats,
+      maxPages: maxPages ?? null,
+      mode,
       retreats: stats.retreats,
       talks: stats.talks,
       teachers: stats.teachers,

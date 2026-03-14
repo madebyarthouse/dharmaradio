@@ -12,16 +12,16 @@ export function SearchInput({
   placeholder = "Search...",
 }: SearchInputProps) {
   return (
-    <div className="relative ">
+    <div className="relative w-full md:w-auto">
       <input
         type="text"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pl-10 pr-4 py-2 w-full rounded-lg bg-white/60 backdrop-blur border border-green-600 focus:border-green-800 focus:ring focus:ring-green-600 focus:ring-opacity-50 transition-all"
+        className="pl-12 pr-4 py-3 w-full md:w-80 rounded-full neumorphic-card-pressed bg-transparent border-none outline-none text-text-primary placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all"
       />
       <Search
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-green-800"
+        className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"
         size={18}
       />
     </div>

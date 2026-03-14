@@ -152,48 +152,43 @@ export default function RetreatDetail() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="relative rounded-xl overflow-hidden mb-8 shadow-sm"
+        className="neumorphic-card rounded-2xl p-8 mb-8"
       >
-        <h1 className="text-4xl font-serif  mb-2">{retreat.title}</h1>
-        <Link
-          to={`/centers/${talks[0].centerSlug}`}
-          className="flex items-center space-x-4"
-        >
-          {talks.length > 0 && (
-            <div className="flex items-center space-x-2">
-              <Globe size={16} />
-              <span>{talks[0].centerName}</span>
-            </div>
-          )}
-        </Link>
+        <h1 className="text-4xl font-semibold text-text-primary mb-4">{retreat.title}</h1>
+        {talks.length > 0 && talks[0].centerName && (
+          <Link
+            to={`/centers/${talks[0].centerSlug}`}
+            className="flex items-center space-x-2 text-text-secondary hover:text-blue-600 transition-colors mb-4"
+          >
+            <Globe size={16} />
+            <span>{talks[0].centerName}</span>
+          </Link>
+        )}
+        {retreat.description && (
+          <p className="text-text-secondary leading-relaxed">{retreat.description}</p>
+        )}
       </motion.div>
 
-      {retreat.description && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          <div className="col-span-2">
-            <h2 className="text-xl font-medium mb-4">About this Retreat</h2>
-            <p className="text-green-800 mb-6">{retreat.description}</p>
-          </div>
-        </div>
-      )}
-
       {!showTeacherTabs && teachers.length > 0 && (
-        <AnimatedList className="flex flex-wrap gap-4 mb-8">
+        <AnimatedList className="flex flex-wrap gap-3 mb-8">
           {teachers.map((teacher) => (
             <Link
               key={teacher.slug}
               to={`/teachers/${teacher.slug}`}
-              className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur rounded-full shadow-sm hover:shadow-md transition-all"
+              className="neumorphic-button flex items-center gap-2 px-4 py-2 rounded-full hover:shadow-lg transition-all"
             >
               {teacher.profileImageUrl && (
                 <img
                   src={teacher.profileImageUrl}
                   alt={teacher.name}
-                  className="w-8 h-8 rounded-full object-cover"
+                  className="w-7 h-7 rounded-full object-cover"
+                  style={{
+                    filter: "grayscale(90%) contrast(1.05)",
+                  }}
                 />
               )}
-              <span className="text-sm font-medium">{teacher.name}</span>
-              <span className="text-xs text-green-600">
+              <span className="text-sm font-medium text-text-primary">{teacher.name}</span>
+              <span className="text-xs text-text-tertiary">
                 {teacher.talksCount} talks
               </span>
             </Link>

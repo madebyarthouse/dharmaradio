@@ -77,38 +77,46 @@
       inset -3px -3px 6px rgba(255, 255, 255, 0.9);
   }
 
-  /* Flying birds animation */
+  /* Flying birds animation - birds recede into distance */
   @keyframes fly {
     0% {
-      transform: translate(-10vw, 20vh) scale(0.8);
+      transform: translate(-10vw, 10vh) scale(0.3);
+      opacity: 0;
+    }
+    15% {
+      opacity: 0.15;
     }
     50% {
-      transform: translate(50vw, 15vh) scale(1);
+      transform: translate(50vw, 5vh) scale(0.2);
+      opacity: 0.12;
+    }
+    85% {
+      opacity: 0.08;
     }
     100% {
-      transform: translate(110vw, 25vh) scale(0.8);
+      transform: translate(110vw, 8vh) scale(0.1);
+      opacity: 0;
     }
   }
 
   .bird {
     position: absolute;
-    opacity: 0.4;
     pointer-events: none;
   }
 
   .bird-1 {
-    animation: fly 45s linear infinite;
-    top: 10%;
+    animation: fly 60s ease-in-out infinite;
+    top: 8%;
   }
 
   .bird-2 {
-    animation: fly 60s linear infinite 10s;
-    top: 30%;
+    animation: fly 75s ease-in-out infinite 15s;
+    top: 12%;
   }
 
   .bird-3 {
-    animation: fly 55s linear infinite 25s;
-    top: 15%;
+    animation: fly 70s ease-in-out infinite 35s;
+    top: 10%;
   }
 
   /* Waveform bars */

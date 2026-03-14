@@ -41,22 +41,20 @@ export function FilterableList({
   );
 
   return (
-    <div className="">
-      <div className="flex flex-col justify-between gap-4 mb-8">
-        <h1 className="text-3xl font-serif">
-          {title} ({totalItems})
-        </h1>
-        <div className="text-sm text-green-800"></div>
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col justify-between gap-2">
+        <h1 className="text-4xl font-semibold text-text-primary">{title}</h1>
+        <p className="text-sm text-text-secondary">
+          {totalItems.toLocaleString()} {totalItems === 1 ? itemName : pluralName} available
+        </p>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <div className="w-full md:w-auto">
-          <SearchInput
-            value={searchTerm}
-            onChange={setSearchTerm}
-            placeholder={searchPlaceholder || `Search ${pluralName}...`}
-          />
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <SearchInput
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder={searchPlaceholder || `Search ${pluralName}...`}
+        />
 
         {sortOptions && sortOptions.length > 0 && (
           <div className="flex gap-2">
@@ -75,8 +73,8 @@ export function FilterableList({
 
       <Suspense
         fallback={
-          <div className="flex justify-center py-8">
-            <div className="animate-pulse">Loading...</div>
+          <div className="flex justify-center py-12">
+            <div className="text-text-tertiary text-sm">Loading...</div>
           </div>
         }
       >

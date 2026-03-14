@@ -7,6 +7,7 @@ import { talks } from "../../db/schema";
 import { inArray } from "drizzle-orm";
 import { Logger } from "./logger";
 import { withRetry } from "./retry";
+import type { SyncMode } from "../types";
 
 const logger = new Logger("fetch-talks");
 
@@ -40,19 +41,29 @@ export type FetchTalksStats = {
   totalSkipped: number;
 };
 
+export type FetchTalksOptions = {
+  maxPages?: number;
+  mode?: SyncMode;
+  skipProcessing?: boolean;
+};
+
 export async function fetchTalksFromDharmaseed(
   database: D1Database,
   processPage: ProcessPageCallback,
-  maxPages?: number,
-  skipProcessing = false,
+  options: FetchTalksOptions = {},
 ): Promise<FetchTalksStats> {
+  const {
+    maxPages,
+    mode = "incremental",
+    skipProcessing = false,
+  } = options;
   let page = 1;
   let shouldContinue = true;
   let totalProcessed = 0;
   let totalSkipped = 0;
   let totalExisting = 0;
 
-  logger.info("Starting fetch", { skipProcessing });
+  logger.info("Starting fetch", { maxPages, mode, skipProcessing });
 
   while (shouldContinue) {
     try {
@@ -90,26 +101,28 @@ export async function fetchTalksFromDharmaseed(
       const newTalks = await filterNewTalks(database, scrapedTalks);
       const existingCount = scrapedTalks.length - newTalks.length;
       totalExisting += existingCount;
+      const talksToProcess = mode === "full" ? scrapedTalks : newTalks;
 
-      if (skipProcessing && newTalks.length === 0) {
-        totalSkipped += newTalks.length;
+      if (skipProcessing && talksToProcess.length === 0) {
+        totalSkipped += talksToProcess.length;
         logger.info("Skipping processing", {
           page,
           newTalks: newTalks.length,
+          talksToProcess: talksToProcess.length,
           existing: existingCount,
           totalSkipped,
           totalExisting,
         });
       } else {
         // Process only if not skipping
-        if (newTalks.length > 0) {
-          await processPage(newTalks);
-          totalProcessed += newTalks.length;
+        if (talksToProcess.length > 0) {
+          await processPage(talksToProcess);
+          totalProcessed += talksToProcess.length;
         }
       }
 
-      // If no new talks are found, we can stop
-      if (newTalks.length === 0 && !skipProcessing) {
+      // Incremental mode stops once we reach a fully-known page.
+      if (mode === "incremental" && newTalks.length === 0 && !skipProcessing) {
         logger.info("No new talks found, stopping fetch", {
           page,
           totalProcessed,
@@ -143,6 +156,7 @@ export async function fetchTalksFromDharmaseed(
     totalProcessed,
     totalSkipped,
     totalExisting,
+    mode,
     skipProcessing,
   });
 

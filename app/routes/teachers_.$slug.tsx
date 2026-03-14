@@ -166,7 +166,7 @@ export default function TeacherDetail() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-white/60 backdrop-blur rounded-xl p-8 shadow-sm mb-8"
+        className="neumorphic-card rounded-2xl p-8 mb-8"
       >
         <div className="flex flex-col md:flex-row md:items-start md:space-x-8">
           <motion.div
@@ -178,14 +178,17 @@ export default function TeacherDetail() {
             <img
               src={teacher.profileImageUrl || ""}
               alt={teacher.name}
-              className="w-32 h-32 rounded-full object-cover aspect-square ring-4 ring-green-100"
+              className="w-32 h-32 rounded-full object-cover aspect-square"
+              style={{
+                filter: "grayscale(90%) contrast(1.05)",
+              }}
             />
           </motion.div>
           <div className="flex-1">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-3xl font-serif mb-2 text-center md:text-left"
+              className="text-4xl font-semibold text-text-primary mb-3 text-center md:text-left"
             >
               {teacher.name}
             </motion.h1>
@@ -193,7 +196,7 @@ export default function TeacherDetail() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1 }}
-              className="text-green-800 mb-4"
+              className="text-text-secondary leading-relaxed mb-4"
             >
               {teacher.description}
             </motion.p>
@@ -203,7 +206,7 @@ export default function TeacherDetail() {
                   href={teacher.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center space-x-2 text-sm text-green-800 hover:text-green-900 transition-colors"
+                  className="neumorphic-button px-4 py-2 rounded-full flex items-center space-x-2 text-sm text-text-primary hover:text-blue-600 transition-colors"
                 >
                   <Globe size={16} />
                   <span>Website</span>
@@ -215,7 +218,7 @@ export default function TeacherDetail() {
                   href={teacher.donationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center space-x-2 text-sm text-green-800 hover:text-rose-500 transition-colors"
+                  className="neumorphic-button px-4 py-2 rounded-full flex items-center space-x-2 text-sm text-text-primary hover:text-rose-500 transition-colors"
                 >
                   <Heart size={16} />
                   <span>Support</span>

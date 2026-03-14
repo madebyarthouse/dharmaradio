@@ -10,6 +10,8 @@ export type SyncJobResult = SyncExecutionResult & {
   cacheEpoch?: string;
 };
 
+const RECENT_SYNC_MAX_PAGES = 10;
+
 const persistSyncRun = async (
   database: D1Database,
   result: SyncJobResult,
@@ -37,8 +39,12 @@ export const runSyncJob = async (
   try {
     const baseResult =
       job === "syncTeachers"
-        ? await syncTeachers(env.DB)
-        : await syncTalks(env.DB, false);
+        ? await syncTeachers(env.DB, { maxPages: RECENT_SYNC_MAX_PAGES })
+        : await syncTalks(env.DB, {
+            maxPages: RECENT_SYNC_MAX_PAGES,
+            mode: "incremental",
+            skipProcessing: false,
+          });
 
     const cacheEpoch = await bumpCacheEpoch(env.DB_QUERY_CACHE);
     const result: SyncJobResult = {

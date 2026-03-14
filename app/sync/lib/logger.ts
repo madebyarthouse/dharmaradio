@@ -1,5 +1,20 @@
 type LogLevel = "debug" | "info" | "warn" | "error";
 
+const levelOrder: Record<LogLevel, number> = {
+  debug: 10,
+  info: 20,
+  warn: 30,
+  error: 40,
+};
+
+function getLogLevel(): LogLevel {
+  const value = process.env.LOG_LEVEL;
+  if (value === "debug" || value === "info" || value === "warn" || value === "error") {
+    return value;
+  }
+  return "info";
+}
+
 export class Logger {
   private context: string;
 
@@ -12,6 +27,9 @@ export class Logger {
     message: string,
     meta?: Record<string, unknown>
   ) {
+    if (levelOrder[level] < levelOrder[getLogLevel()]) {
+      return;
+    }
     const timestamp = new Date().toISOString();
     console[level](
       JSON.stringify({

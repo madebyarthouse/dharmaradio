@@ -1,4 +1,8 @@
+import { Logger } from "./logger";
+
 export const dharmaSeedBase = "https://dharmaseed.org";
+
+const logger = new Logger("sync-utils");
 
 export const urlForPage = (page: number) =>
   `${dharmaSeedBase}/talks/?page=${page}&search=&sort=-rec_date&page_items=100`;
@@ -24,6 +28,6 @@ export const sumTime = (time: string): number => {
     return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
   }
 
-  console.log(`Invalid time for talk: ${time}`);
+  logger.warn("Invalid talk time", { time });
   return 0;
 };

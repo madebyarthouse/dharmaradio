@@ -12,18 +12,18 @@ export function Navbar() {
   ];
 
   return (
-    <header className="flex justify-between items-center mb-8 pb-6">
+    <header className="flex justify-between items-center mb-4 pb-3">
       {/* Logo */}
       <Link
         to="/"
-        className="flex items-center gap-3 text-text-primary hover:opacity-80 transition-opacity"
+        className="flex items-center gap-2.5 text-text-primary hover:opacity-80 transition-opacity"
       >
-        <div className="neumorphic-button rounded-full w-12 h-12 flex items-center justify-center">
-          <Radio size={20} className="text-blue-500" />
+        <div className="neumorphic-button rounded-full w-10 h-10 flex items-center justify-center">
+          <Radio size={18} className="text-blue-500" />
         </div>
         <div>
-          <div className="text-lg font-semibold leading-tight">Dharma Radio</div>
-          <div className="text-[0.7rem] text-text-secondary uppercase tracking-wider">
+          <div className="text-base font-semibold leading-tight">Dharma Radio</div>
+          <div className="text-[0.65rem] text-text-secondary uppercase tracking-wide">
             Archive
           </div>
         </div>
@@ -37,7 +37,7 @@ export function Navbar() {
             <Link
               key={link.path}
               to={link.path}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                 isActive
                   ? "neumorphic-card-pressed text-text-primary"
                   : "text-text-secondary hover:text-text-primary hover:bg-white/40"

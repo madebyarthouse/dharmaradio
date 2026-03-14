@@ -1,4 +1,6 @@
 import { Link, useSearchParams, useLocation } from "react-router";
+import { Button } from "./button";
+import { cn } from "~/lib/cn";
 
 type PaginationProps = {
   currentPage: number;
@@ -24,60 +26,48 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
     >
       <Link
         to={createPageUrl(currentPage - 1)}
-        className={`px-3 py-1 rounded ${
-          currentPage === 1
-            ? "pointer-events-none opacity-50 bg-green-100"
-            : "bg-green-100 hover:bg-green-200"
-        }`}
+        className={cn(
+          currentPage === 1 && "pointer-events-none opacity-40"
+        )}
         aria-label="Previous page"
         aria-disabled={currentPage === 1}
         tabIndex={currentPage === 1 ? -1 : 0}
       >
-        ←
+        <Button variant="default">← Previous</Button>
       </Link>
 
-      {currentPage > 1 && (
-        <Link
-          to={createPageUrl(1)}
-          className="px-3 py-1 rounded bg-green-100 hover:bg-green-200"
-        >
-          1
+      <div className="flex items-center gap-2">
+        {currentPage > 1 && (
+          <Link to={createPageUrl(1)}>
+            <Button variant="ghost" size="icon">1</Button>
+          </Link>
+        )}
+
+        {currentPage > 2 && <span className="px-2 text-text-tertiary">...</span>}
+
+        <Link to={createPageUrl(currentPage)} aria-current="page">
+          <Button variant="pressed" size="icon">{currentPage}</Button>
         </Link>
-      )}
 
-      {currentPage > 2 && <span className="px-2">...</span>}
+        {currentPage < totalPages - 1 && <span className="px-2 text-text-tertiary">...</span>}
 
-      <Link
-        to={createPageUrl(currentPage)}
-        className="px-3 py-1 rounded bg-green-200"
-        aria-current="page"
-      >
-        {currentPage}
-      </Link>
-
-      {currentPage < totalPages - 1 && <span className="px-2">...</span>}
-
-      {currentPage < totalPages && (
-        <Link
-          to={createPageUrl(totalPages)}
-          className="px-3 py-1 rounded bg-green-100 hover:bg-green-200"
-        >
-          {totalPages}
-        </Link>
-      )}
+        {currentPage < totalPages && (
+          <Link to={createPageUrl(totalPages)}>
+            <Button variant="ghost" size="icon">{totalPages}</Button>
+          </Link>
+        )}
+      </div>
 
       <Link
         to={createPageUrl(currentPage + 1)}
-        className={`px-3 py-1 rounded ${
-          currentPage === totalPages
-            ? "pointer-events-none opacity-50 bg-green-100"
-            : "bg-green-100 hover:bg-green-200"
-        }`}
+        className={cn(
+          currentPage === totalPages && "pointer-events-none opacity-40"
+        )}
         aria-label="Next page"
         aria-disabled={currentPage === totalPages}
         tabIndex={currentPage === totalPages ? -1 : 0}
       >
-        →
+        <Button variant="default">Next →</Button>
       </Link>
     </nav>
   );

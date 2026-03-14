@@ -62,9 +62,19 @@ export async function loader({ context }: LoaderFunctionArgs) {
         slug: teachers.slug,
         profileImageUrl: teachers.profileImageUrl,
       },
+      center: {
+        name: centers.name,
+        slug: centers.slug,
+      },
+      retreat: {
+        title: retreats.title,
+        slug: retreats.slug,
+      },
     })
     .from(talks)
     .leftJoin(teachers, eq(talks.teacherId, teachers.id))
+    .leftJoin(centers, eq(talks.centerId, centers.id))
+    .leftJoin(retreats, eq(talks.retreatId, retreats.id))
     .orderBy(desc(talks.publicationDate))
     .limit(6);
 
@@ -108,10 +118,14 @@ export default function Home() {
     playTalk({
       id: String(talk.id),
       title: talk.title,
-      teacher: talk.teacher?.name,
-      teacherSlug: talk.teacher?.slug,
+      teacher: talk.teacher?.name ?? null,
+      teacherSlug: talk.teacher?.slug ?? null,
+      centerName: talk.center?.name ?? null,
+      centerSlug: talk.center?.slug ?? null,
       duration: talk.duration,
       audioUrl: talk.audioUrl,
+      retreatSlug: talk.retreat?.slug ?? null,
+      retreatTitle: talk.retreat?.title ?? null,
     });
   };
 

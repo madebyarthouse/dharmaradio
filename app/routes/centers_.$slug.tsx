@@ -163,10 +163,10 @@ export default function CenterDetail() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className=" mb-8"
+        className="neumorphic-card rounded-2xl p-8 mb-8"
       >
-        <h1 className="text-3xl font-serif mb-4">{center.name}</h1>
-        <p className="text-green-800">{center.description}</p>
+        <h1 className="text-4xl font-semibold text-text-primary mb-4">{center.name}</h1>
+        <p className="text-text-secondary leading-relaxed">{center.description}</p>
       </motion.div>
 
       <Tabs

@@ -23,10 +23,16 @@ type AudioContextType = {
   progress: number;
   currentTime: number;
   duration: number;
+  volume: number;
   playTalk: (talk: PlayerTalk) => void;
   pauseTalk: () => void;
   togglePlay: () => void;
   seek: (time: number) => void;
+  setVolume: (volume: number) => void;
+  playNext: () => void;
+  playPrevious: () => void;
+  playlist: PlayerTalk[];
+  setPlaylist: (playlist: PlayerTalk[]) => void;
 };
 
 type PlayerTalk = Talk & {
@@ -47,6 +53,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [volume, setVolumeState] = useState(0.8);
+  const [playlist, setPlaylist] = useState<PlayerTalk[]>([]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -207,6 +215,47 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     [currentTalk, posthog],
   );
 
+  const setVolume = useCallback((newVolume: number) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const clampedVolume = Math.max(0, Math.min(1, newVolume));
+    audio.volume = clampedVolume;
+    setVolumeState(clampedVolume);
+  }, []);
+
+  const playNext = useCallback(() => {
+    if (!currentTalk || playlist.length === 0) return;
+
+    const currentIndex = playlist.findIndex(talk => talk.id === currentTalk.id);
+    if (currentIndex === -1 || currentIndex === playlist.length - 1) return;
+
+    const nextTalk = playlist[currentIndex + 1];
+    if (nextTalk) {
+      playTalk(nextTalk);
+    }
+  }, [currentTalk, playlist, playTalk]);
+
+  const playPrevious = useCallback(() => {
+    if (!currentTalk || playlist.length === 0) return;
+
+    const currentIndex = playlist.findIndex(talk => talk.id === currentTalk.id);
+    if (currentIndex === -1 || currentIndex === 0) return;
+
+    const previousTalk = playlist[currentIndex - 1];
+    if (previousTalk) {
+      playTalk(previousTalk);
+    }
+  }, [currentTalk, playlist, playTalk]);
+
+  // Set initial volume
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.volume = volume;
+    }
+  }, [volume]);
+
   return (
     <AudioContext.Provider
       value={{
@@ -215,10 +264,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         progress,
         currentTime,
         duration,
+        volume,
         playTalk,
         pauseTalk,
         togglePlay,
         seek,
+        setVolume,
+        playNext,
+        playPrevious,
+        playlist,
+        setPlaylist,
       }}
     >
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}

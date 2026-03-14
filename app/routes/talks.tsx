@@ -10,7 +10,8 @@ import { cacheHeader } from "pretty-cache-header";
 import { withCachedJson } from "~/lib/cache.server";
 import { Play, Search, Filter } from "lucide-react";
 import { useAudio } from "~/contexts/audio-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Button } from "~/components/ui/button";
 
 const cacheHeaders = {
   "Cache-Control": cacheHeader({
@@ -104,12 +105,29 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 export default function Talks() {
   const { items: talksList, pagination } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { playTalk } = useAudio();
+  const { playTalk, setPlaylist } = useAudio();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [showFilters, setShowFilters] = useState(false);
 
   const currentSort = searchParams.get("sort") || "date";
   const currentOrder = searchParams.get("order") || "desc";
+
+  // Update playlist whenever talks list changes
+  useEffect(() => {
+    const playlist = talksList.map(talk => ({
+      id: String(talk.id),
+      title: talk.title,
+      teacher: talk.teacher?.name ?? null,
+      teacherSlug: talk.teacher?.slug ?? null,
+      centerName: talk.center?.name ?? null,
+      centerSlug: talk.center?.slug ?? null,
+      retreatTitle: talk.retreat?.title ?? null,
+      retreatSlug: talk.retreat?.slug ?? null,
+      duration: talk.duration,
+      audioUrl: talk.audioUrl,
+    }));
+    setPlaylist(playlist);
+  }, [talksList, setPlaylist]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,10 +157,14 @@ export default function Talks() {
     playTalk({
       id: String(talk.id),
       title: talk.title,
-      teacher: talk.teacher?.name,
-      teacherSlug: talk.teacher?.slug,
+      teacher: talk.teacher?.name ?? null,
+      teacherSlug: talk.teacher?.slug ?? null,
+      centerName: talk.center?.name ?? null,
+      centerSlug: talk.center?.slug ?? null,
       duration: talk.duration,
       audioUrl: talk.audioUrl,
+      retreatSlug: talk.retreat?.slug ?? null,
+      retreatTitle: talk.retreat?.title ?? null,
     });
   };
 
@@ -169,13 +191,10 @@ export default function Talks() {
             </p>
           </div>
 
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="neumorphic-button px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium text-text-primary"
-          >
+          <Button onClick={() => setShowFilters(!showFilters)} className="gap-2">
             <Filter size={16} />
             Filters
-          </button>
+          </Button>
         </div>
 
         {/* Search Bar */}
@@ -189,12 +208,9 @@ export default function Talks() {
               placeholder="Search talks or teachers..."
               className="flex-1 bg-transparent border-none outline-none text-text-primary placeholder:text-text-tertiary"
             />
-            <button
-              type="submit"
-              className="neumorphic-button px-5 py-2 rounded-full text-xs font-medium text-text-primary"
-            >
+            <Button type="submit" size="sm">
               Search
-            </button>
+            </Button>
           </div>
         </form>
 
@@ -211,14 +227,10 @@ export default function Talks() {
                   { value: "title", label: "Title" },
                   { value: "duration", label: "Duration" },
                 ].map((option) => (
-                  <button
+                  <Button
                     key={option.value}
                     onClick={() => handleSort(option.value)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                      currentSort === option.value
-                        ? "neumorphic-card-pressed text-text-primary"
-                        : "text-text-secondary hover:text-text-primary"
-                    }`}
+                    variant={currentSort === option.value ? "pressed" : "ghost"}
                   >
                     {option.label}
                     {currentSort === option.value && (
@@ -226,7 +238,7 @@ export default function Talks() {
                         {currentOrder === "asc" ? "↑" : "↓"}
                       </span>
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -323,13 +335,12 @@ export default function Talks() {
       {/* Pagination */}
       {pagination.pages > 1 && (
         <div className="flex justify-center items-center gap-2">
-          <button
+          <Button
             onClick={() => goToPage(Math.max(1, pagination.current - 1))}
             disabled={pagination.current === 1}
-            className="neumorphic-button px-4 py-2 rounded-full text-sm font-medium text-text-primary disabled:opacity-40"
           >
             ← Previous
-          </button>
+          </Button>
 
           <div className="flex items-center gap-2">
             {[...Array(Math.min(pagination.pages, 5))].map((_, i) => {
@@ -345,30 +356,26 @@ export default function Talks() {
               }
 
               return (
-                <button
+                <Button
                   key={pageNum}
                   onClick={() => goToPage(pageNum)}
-                  className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
-                    pagination.current === pageNum
-                      ? "neumorphic-card-pressed text-text-primary"
-                      : "text-text-secondary hover:text-text-primary"
-                  }`}
+                  variant={pagination.current === pageNum ? "pressed" : "ghost"}
+                  size="icon"
                 >
                   {pageNum}
-                </button>
+                </Button>
               );
             })}
           </div>
 
-          <button
+          <Button
             onClick={() =>
               goToPage(Math.min(pagination.pages, pagination.current + 1))
             }
             disabled={pagination.current === pagination.pages}
-            className="neumorphic-button px-4 py-2 rounded-full text-sm font-medium text-text-primary disabled:opacity-40"
           >
             Next →
-          </button>
+          </Button>
         </div>
       )}
     </div>

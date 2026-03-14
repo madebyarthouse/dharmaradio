@@ -40,8 +40,12 @@ export function TalkFeedItem({
       title,
       teacher: teacherName,
       teacherSlug,
+      centerName: null,
+      centerSlug: null,
       duration,
       audioUrl,
+      retreatSlug: null,
+      retreatTitle: null,
     });
   };
 

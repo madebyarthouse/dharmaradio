@@ -167,20 +167,20 @@ export default function TalkDetail() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-white/60 backdrop-blur rounded-xl p-8 shadow-sm mb-8"
+        className="neumorphic-card rounded-2xl p-8 mb-8"
       >
         <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-4">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-3xl font-serif"
+              className="text-4xl font-semibold text-text-primary flex-1"
             >
               {talk.title}
             </motion.h1>
             <motion.button
               onClick={handlePlayToggle}
-              className="relative w-16 h-16 rounded-full bg-green-600 text-white flex items-center justify-center hover:bg-green-700 transition-colors flex-shrink-0"
+              className="relative w-16 h-16 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors flex-shrink-0 shadow-lg"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -188,7 +188,7 @@ export default function TalkDetail() {
                 animate={
                   isCurrentlyPlaying
                     ? {
-                        scale: [1, 1.2, 1],
+                        scale: [1, 1.1, 1],
                         transition: {
                           repeat: Infinity,
                           duration: 2,
@@ -199,17 +199,17 @@ export default function TalkDetail() {
                 }
               >
                 {isCurrentlyPlaying ? (
-                  <Pause size={32} />
+                  <Pause size={28} fill="currentColor" />
                 ) : (
-                  <Play size={32} className="ml-1" />
+                  <Play size={28} fill="currentColor" className="ml-1" />
                 )}
               </motion.div>
               {isCurrentlyPlaying && (
                 <motion.div
-                  className="absolute inset-0 rounded-full border-2 border-white"
+                  className="absolute inset-0 rounded-full border-2 border-white/50"
                   animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [1, 0, 1],
+                    scale: [1, 1.2, 1],
+                    opacity: [0.5, 0, 0.5],
                   }}
                   transition={{
                     duration: 2,
@@ -225,7 +225,7 @@ export default function TalkDetail() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className="flex flex-wrap gap-4 text-sm text-green-800 mb-4"
+            className="flex flex-wrap gap-4 text-sm text-text-tertiary"
           >
             <div className="flex items-center space-x-2">
               <Calendar size={16} />
@@ -240,14 +240,16 @@ export default function TalkDetail() {
             </div>
           </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-green-800"
-          >
-            {talk.description}
-          </motion.p>
+          {talk.description && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-text-secondary leading-relaxed"
+            >
+              {talk.description}
+            </motion.p>
+          )}
         </div>
       </motion.div>
 

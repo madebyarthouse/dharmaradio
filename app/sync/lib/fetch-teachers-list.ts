@@ -8,11 +8,26 @@ import { withRetry } from "./retry";
 
 const logger = new Logger("fetch-teachers-list");
 
+export type FetchTeachersStats = {
+  pagesFetched: number;
+  totalTeachers: number;
+};
+
 export async function fetchTeachersListFromDharmaseed(): Promise<
   ScrapedTeacher[]
 > {
+  return (await fetchTeachersPagesFromDharmaseed()).teachers;
+}
+
+export async function fetchTeachersPagesFromDharmaseed(
+  maxPages?: number,
+): Promise<{
+  stats: FetchTeachersStats;
+  teachers: ScrapedTeacher[];
+}> {
   const teachers: ScrapedTeacher[] = [];
   let page = 1;
+  let pagesFetched = 0;
   let hasMorePages = true;
 
   while (hasMorePages) {
@@ -41,12 +56,17 @@ export async function fetchTeachersListFromDharmaseed(): Promise<
         hasMorePages = false;
       } else {
         teachers.push(...pageTeachers);
+        pagesFetched++;
         logger.info(`Fetched page ${page}`, {
           teacherCount: pageTeachers.length,
         });
-        page++;
-        // Add a small delay between pages
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (maxPages && page >= maxPages) {
+          hasMorePages = false;
+        } else {
+          page++;
+          // Add a small delay between pages
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
       }
     } catch (error) {
       logger.error(`Failed to fetch page ${page}`, error as Error);
@@ -56,8 +76,14 @@ export async function fetchTeachersListFromDharmaseed(): Promise<
 
   logger.info("Successfully fetched all teachers", {
     totalTeachers: teachers.length,
-    pages: page - 1,
+    pages: pagesFetched,
   });
 
-  return teachers;
+  return {
+    stats: {
+      pagesFetched,
+      totalTeachers: teachers.length,
+    },
+    teachers,
+  };
 }

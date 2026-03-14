@@ -1,3 +1,5 @@
+import { Button } from "./button";
+
 type SortButtonProps = {
   label: string;
   active: boolean;
@@ -12,11 +14,11 @@ export function SortButton({
   onClick,
 }: SortButtonProps) {
   return (
-    <button
+    <Button
       onClick={onClick}
-      className={`px-3 py-1 rounded ${active ? "bg-green-200" : "bg-green-100"}`}
+      variant={active ? "pressed" : "ghost"}
     >
       {label} {active && (ascending ? "↑" : "↓")}
-    </button>
+    </Button>
   );
 }
