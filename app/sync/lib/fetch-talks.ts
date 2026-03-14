@@ -35,7 +35,12 @@ async function filterNewTalks(
 type ProcessPageCallback = (talks: ScrapedTalk[]) => Promise<void>;
 
 export type FetchTalksStats = {
+  lastPageFetched: number;
+  lastPageNewTalkCount: number;
+  lastPageTalkCount: number;
   pagesFetched: number;
+  reachedPageLimit: boolean;
+  stopReason: "known_page_reached" | "no_scraped_talks" | "page_limit_reached";
   totalExisting: number;
   totalProcessed: number;
   totalSkipped: number;
@@ -58,10 +63,15 @@ export async function fetchTalksFromDharmaseed(
     skipProcessing = false,
   } = options;
   let page = 1;
+  let pagesFetched = 0;
   let shouldContinue = true;
+  let stopReason: FetchTalksStats["stopReason"] = "no_scraped_talks";
   let totalProcessed = 0;
   let totalSkipped = 0;
   let totalExisting = 0;
+  let lastPageFetched = 0;
+  let lastPageTalkCount = 0;
+  let lastPageNewTalkCount = 0;
 
   logger.info("Starting fetch", { maxPages, mode, skipProcessing });
 
@@ -84,6 +94,10 @@ export async function fetchTalksFromDharmaseed(
         },
       );
 
+      pagesFetched++;
+      lastPageFetched = page;
+      lastPageTalkCount = scrapedTalks.length;
+
       logger.info(`Fetched page ${page}`, {
         scrapedTalks: scrapedTalks.length,
         totalProcessed,
@@ -93,6 +107,7 @@ export async function fetchTalksFromDharmaseed(
 
       // No more talks to process
       if (scrapedTalks.length === 0) {
+        stopReason = "no_scraped_talks";
         shouldContinue = false;
         break;
       }
@@ -100,6 +115,7 @@ export async function fetchTalksFromDharmaseed(
       // Always filter to check what exists
       const newTalks = await filterNewTalks(database, scrapedTalks);
       const existingCount = scrapedTalks.length - newTalks.length;
+      lastPageNewTalkCount = newTalks.length;
       totalExisting += existingCount;
       const talksToProcess = mode === "full" ? scrapedTalks : newTalks;
 
@@ -123,6 +139,7 @@ export async function fetchTalksFromDharmaseed(
 
       // Incremental mode stops once we reach a fully-known page.
       if (mode === "incremental" && newTalks.length === 0 && !skipProcessing) {
+        stopReason = "known_page_reached";
         logger.info("No new talks found, stopping fetch", {
           page,
           totalProcessed,
@@ -135,6 +152,7 @@ export async function fetchTalksFromDharmaseed(
 
       // Check if we've reached the max pages limit
       if (maxPages && page >= maxPages) {
+        stopReason = "page_limit_reached";
         shouldContinue = false;
       } else {
         page++;
@@ -152,7 +170,9 @@ export async function fetchTalksFromDharmaseed(
   }
 
   logger.info("Fetch completed", {
-    totalPages: page,
+    lastPageFetched,
+    pagesFetched,
+    stopReason,
     totalProcessed,
     totalSkipped,
     totalExisting,
@@ -161,7 +181,12 @@ export async function fetchTalksFromDharmaseed(
   });
 
   return {
-    pagesFetched: page,
+    lastPageFetched,
+    lastPageNewTalkCount,
+    lastPageTalkCount,
+    pagesFetched,
+    reachedPageLimit: stopReason === "page_limit_reached",
+    stopReason,
     totalExisting,
     totalProcessed,
     totalSkipped,

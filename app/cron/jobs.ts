@@ -11,11 +11,12 @@ export const runCronJob = async (
   job: CronJob,
   env: Env,
   _ctx: ExecutionContext,
+  trigger: { cron?: string; type: "scheduled" } = { type: "scheduled" },
 ) => {
   switch (job) {
     case "syncTalks":
     case "syncTeachers":
-      return runSyncJob(job, env);
+      return runSyncJob(job, env, trigger);
     default: {
       const exhaustive: never = job;
       throw new Error(`Unknown cron job: ${exhaustive}`);

@@ -8,10 +8,10 @@ import { getRequestParams } from "~/utils/request-params";
 import { withOrdering } from "~/utils/with-ordering";
 import { cacheHeader } from "pretty-cache-header";
 import { withCachedJson } from "~/lib/cache.server";
-import { Play, Search, Filter } from "lucide-react";
+import { Play } from "lucide-react";
 import { useAudio } from "~/contexts/audio-context";
 import { useState, useEffect } from "react";
-import { Button } from "~/components/ui/button";
+import { motion } from "motion/react";
 
 const cacheHeaders = {
   "Cache-Control": cacheHeader({
@@ -96,7 +96,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
       return withPagination({
         query: query.$dynamic(),
-        params: { page, perPage: 24 },
+        params: { page, perPage: 50 },
       });
     }
   );
@@ -105,9 +105,8 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 export default function Talks() {
   const { items: talksList, pagination } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { playTalk, setPlaylist } = useAudio();
+  const { playTalk, setPlaylist, currentTalk, isPlaying } = useAudio();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [showFilters, setShowFilters] = useState(false);
 
   const currentSort = searchParams.get("sort") || "date";
   const currentOrder = searchParams.get("order") || "desc";
@@ -137,14 +136,13 @@ export default function Talks() {
     } else {
       newParams.delete("q");
     }
-    newParams.delete("page"); // Reset to first page
+    newParams.delete("page");
     setSearchParams(newParams);
   };
 
   const handleSort = (field: string) => {
     const newParams = new URLSearchParams(searchParams);
     if (currentSort === field) {
-      // Toggle order
       newParams.set("order", currentOrder === "asc" ? "desc" : "asc");
     } else {
       newParams.set("sort", field);
@@ -169,214 +167,212 @@ export default function Talks() {
   };
 
   const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes} min`;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  };
+
+  const formatDate = (dateInput: Date | number | string) => {
+    const date =
+      dateInput instanceof Date ? dateInput : new Date(dateInput);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
   };
 
   const goToPage = (page: number) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("page", String(page));
     setSearchParams(newParams);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      {/* Header with Search */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-semibold text-text-primary">Talks</h1>
-            <p className="text-sm text-text-secondary mt-1">
-              {pagination.total.toLocaleString()} talks available
-            </p>
-          </div>
+    <div className="max-w-5xl mx-auto px-8 py-16">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-16"
+      >
+        <h1 className="text-7xl font-serif font-light text-text-primary mb-4 tracking-tight leading-none">
+          Talks
+        </h1>
+        <p className="text-text-tertiary text-lg font-light tracking-wide">
+          {pagination.total.toLocaleString()} recordings
+        </p>
+      </motion.div>
 
-          <Button onClick={() => setShowFilters(!showFilters)} className="gap-2">
-            <Filter size={16} />
-            Filters
-          </Button>
-        </div>
-
-        {/* Search Bar */}
-        <form onSubmit={handleSearch}>
-          <div className="neumorphic-card-pressed rounded-full flex items-center px-6 py-3 gap-4">
-            <Search size={18} className="text-text-tertiary flex-shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search talks or teachers..."
-              className="flex-1 bg-transparent border-none outline-none text-text-primary placeholder:text-text-tertiary"
-            />
-            <Button type="submit" size="sm">
-              Search
-            </Button>
-          </div>
+      {/* Search and Sort Bar */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className="mb-12 flex items-end justify-between gap-8 pb-6 border-b border-text-primary/10"
+      >
+        <form onSubmit={handleSearch} className="flex-1 max-w-sm">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search talks..."
+            className="w-full px-0 py-2.5 border-b-2 border-text-primary/15 bg-transparent focus:border-text-primary/40 focus:outline-none text-text-primary placeholder:text-text-tertiary/60 transition-colors text-base"
+          />
         </form>
 
-        {/* Sort Options */}
-        {showFilters && (
-          <div className="neumorphic-card rounded-2xl p-6 space-y-4">
-            <div>
-              <label className="text-sm font-medium text-text-primary block mb-3">
-                Sort by
-              </label>
-              <div className="flex gap-2">
-                {[
-                  { value: "date", label: "Date" },
-                  { value: "title", label: "Title" },
-                  { value: "duration", label: "Duration" },
-                ].map((option) => (
-                  <Button
-                    key={option.value}
-                    onClick={() => handleSort(option.value)}
-                    variant={currentSort === option.value ? "pressed" : "ghost"}
-                  >
-                    {option.label}
-                    {currentSort === option.value && (
-                      <span className="ml-1">
-                        {currentOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        <div className="flex items-center gap-1 text-sm tracking-wide">
+          <button
+            onClick={() => handleSort("date")}
+            className={`px-3 py-2 transition-colors cursor-pointer ${
+              currentSort === "date"
+                ? "text-text-primary font-medium"
+                : "text-text-tertiary hover:text-text-secondary"
+            }`}
+          >
+            Date {currentSort === "date" && (currentOrder === "desc" ? "↓" : "↑")}
+          </button>
+          <span className="text-text-tertiary/30">·</span>
+          <button
+            onClick={() => handleSort("title")}
+            className={`px-3 py-2 transition-colors cursor-pointer ${
+              currentSort === "title"
+                ? "text-text-primary font-medium"
+                : "text-text-tertiary hover:text-text-secondary"
+            }`}
+          >
+            Title {currentSort === "title" && (currentOrder === "desc" ? "↓" : "↑")}
+          </button>
+          <span className="text-text-tertiary/30">·</span>
+          <button
+            onClick={() => handleSort("duration")}
+            className={`px-3 py-2 transition-colors cursor-pointer ${
+              currentSort === "duration"
+                ? "text-text-primary font-medium"
+                : "text-text-tertiary hover:text-text-secondary"
+            }`}
+          >
+            Length {currentSort === "duration" && (currentOrder === "desc" ? "↓" : "↑")}
+          </button>
+        </div>
+      </motion.div>
 
-      {/* Talks Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {talksList.map((talk) => (
-          <div key={talk.id} className="neumorphic-card rounded-2xl p-6 space-y-4 group">
-            <div className="flex items-start gap-4">
-              {talk.teacher?.profileImageUrl && (
-                <div
-                  className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 bg-cover bg-center flex-shrink-0"
-                  style={{
-                    backgroundImage: `url(${talk.teacher.profileImageUrl})`,
-                    filter: "grayscale(90%) contrast(1.05)",
-                  }}
-                />
-              )}
-              <div className="flex-1 min-w-0">
-                <Link to={`/talks/${talk.slug}`} className="block">
-                  <h3 className="font-medium text-text-primary line-clamp-2 group-hover:text-blue-600 transition-colors">
-                    {talk.title}
-                  </h3>
-                </Link>
-                {talk.teacher?.name && (
-                  <p className="text-sm text-text-secondary mt-1 truncate">
-                    {talk.teacher.slug ? (
+      {/* Talks List */}
+      <div className="space-y-0">
+        {talksList.map((talk, index) => {
+          const isCurrentlyPlaying = currentTalk?.id === String(talk.id) && isPlaying;
+
+          return (
+            <motion.div
+              key={talk.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: index * 0.01, duration: 0.3 }}
+              className="group border-b border-text-primary/8 hover:bg-text-primary/[0.015] transition-all"
+            >
+              <div className="py-5 flex items-start gap-5">
+                {/* Play Button */}
+                <button
+                  onClick={() => handlePlayTalk(talk)}
+                  className="shrink-0 mt-0.5 w-9 h-9 rounded-full border border-text-primary/25 flex items-center justify-center hover:border-text-primary hover:bg-text-primary/5 active:bg-text-primary active:text-white transition-all cursor-pointer"
+                  aria-label={isCurrentlyPlaying ? "Pause" : "Play"}
+                >
+                  {isCurrentlyPlaying ? (
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      className="w-2 h-2 bg-text-primary rounded-full"
+                    />
+                  ) : (
+                    <Play size={13} fill="currentColor" className="ml-0.5" />
+                  )}
+                </button>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <Link
+                    to={`/talks/${talk.slug}`}
+                    className="block group/link mb-2.5"
+                  >
+                    <h3 className="text-xl font-light text-text-primary group-hover/link:text-text-primary/60 transition-colors leading-tight">
+                      {talk.title}
+                    </h3>
+                  </Link>
+
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-text-tertiary tracking-wide">
+                    {talk.teacher?.name && (
                       <Link
                         to={`/teachers/${talk.teacher.slug}`}
-                        className="hover:text-text-primary"
+                        className="hover:text-text-secondary transition-colors font-medium"
                       >
                         {talk.teacher.name}
                       </Link>
-                    ) : (
-                      talk.teacher.name
                     )}
-                  </p>
-                )}
+                    {talk.center?.name && (
+                      <>
+                        <span className="text-text-tertiary/40">·</span>
+                        <Link
+                          to={`/centers/${talk.center.slug}`}
+                          className="hover:text-text-secondary transition-colors"
+                        >
+                          {talk.center.name}
+                        </Link>
+                      </>
+                    )}
+                    {talk.retreat?.title && (
+                      <>
+                        <span className="text-text-tertiary/40">·</span>
+                        <Link
+                          to={`/retreats/${talk.retreat.slug}`}
+                          className="hover:text-text-secondary transition-colors italic"
+                        >
+                          {talk.retreat.title}
+                        </Link>
+                      </>
+                    )}
+                    <span className="text-text-tertiary/40">·</span>
+                    <span>{formatDate(talk.publicationDate)}</span>
+                    <span className="text-text-tertiary/40">·</span>
+                    <span className="tabular-nums">{formatDuration(talk.duration)}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* Metadata */}
-            <div className="space-y-2 text-xs text-text-tertiary">
-              {talk.center?.name && (
-                <div className="truncate">
-                  at{" "}
-                  {talk.center.slug ? (
-                    <Link
-                      to={`/centers/${talk.center.slug}`}
-                      className="hover:text-text-secondary"
-                    >
-                      {talk.center.name}
-                    </Link>
-                  ) : (
-                    talk.center.name
-                  )}
-                </div>
-              )}
-              {talk.retreat?.title && (
-                <div className="truncate">
-                  {talk.retreat.slug ? (
-                    <Link
-                      to={`/retreats/${talk.retreat.slug}`}
-                      className="hover:text-text-secondary"
-                    >
-                      {talk.retreat.title}
-                    </Link>
-                  ) : (
-                    talk.retreat.title
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between pt-2 border-t border-text-primary/5">
-              <span className="text-xs text-text-tertiary">
-                {formatDuration(talk.duration)}
-              </span>
-              <button
-                onClick={() => handlePlayTalk(talk)}
-                className="neumorphic-button rounded-full w-10 h-10 flex items-center justify-center text-text-primary hover:scale-110 transition-transform"
-                aria-label="Play"
-              >
-                <Play size={16} fill="currentColor" className="ml-0.5" />
-              </button>
-            </div>
-          </div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Pagination */}
       {pagination.pages > 1 && (
-        <div className="flex justify-center items-center gap-2">
-          <Button
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="py-12 flex items-center justify-between border-t border-text-primary/10 mt-12"
+        >
+          <button
             onClick={() => goToPage(Math.max(1, pagination.current - 1))}
             disabled={pagination.current === 1}
+            className="px-4 py-2 text-sm font-light text-text-primary hover:text-text-primary/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             ← Previous
-          </Button>
+          </button>
 
-          <div className="flex items-center gap-2">
-            {[...Array(Math.min(pagination.pages, 5))].map((_, i) => {
-              let pageNum;
-              if (pagination.pages <= 5) {
-                pageNum = i + 1;
-              } else if (pagination.current <= 3) {
-                pageNum = i + 1;
-              } else if (pagination.current >= pagination.pages - 2) {
-                pageNum = pagination.pages - 4 + i;
-              } else {
-                pageNum = pagination.current - 2 + i;
-              }
-
-              return (
-                <Button
-                  key={pageNum}
-                  onClick={() => goToPage(pageNum)}
-                  variant={pagination.current === pageNum ? "pressed" : "ghost"}
-                  size="icon"
-                >
-                  {pageNum}
-                </Button>
-              );
-            })}
+          <div className="flex items-center gap-1 text-sm font-light text-text-tertiary">
+            Page {pagination.current} of {pagination.pages}
           </div>
 
-          <Button
-            onClick={() =>
-              goToPage(Math.min(pagination.pages, pagination.current + 1))
-            }
+          <button
+            onClick={() => goToPage(Math.min(pagination.pages, pagination.current + 1))}
             disabled={pagination.current === pagination.pages}
+            className="px-4 py-2 text-sm font-light text-text-primary hover:text-text-primary/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             Next →
-          </Button>
-        </div>
+          </button>
+        </motion.div>
       )}
     </div>
   );

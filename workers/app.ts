@@ -162,17 +162,24 @@ export default {
         console.log("cron:start", { cron, job, startedAt });
 
         try {
-          const result = await runCronJob(job, env, ctx);
+          const result = await runCronJob(job, env, ctx, {
+            cron,
+            type: "scheduled",
+          });
           console.log("cron:success", {
             cron,
-            job,
+            failedCount: result.failedCount,
             startedAt,
             finishedAt: new Date().toISOString(),
-            result,
+            job,
+            processedCount: result.processedCount,
+            runId: result.runId ?? null,
+            status: result.status,
           });
         } catch (error) {
           console.error("cron:error", {
             cron,
+            finishedAt: new Date().toISOString(),
             job,
             error: String(error),
           });
