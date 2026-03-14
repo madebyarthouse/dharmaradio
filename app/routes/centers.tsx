@@ -87,7 +87,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
       return withPagination({
         query: query.$dynamic(),
-        params: { page, perPage: 100 },
+        params: { page, perPage: 25 },
       });
     },
   );
@@ -200,29 +200,40 @@ export default function Centers() {
         </div>
       </motion.div>
 
-      {/* Centers List */}
-      <div className="space-y-0">
+      {/* Centers List - 2 Column Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {centersList.map((center, index) => (
           <motion.div
             key={center.id}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: index * 0.005, duration: 0.2 }}
-            className="group border-b border-text-primary/8 hover:bg-text-primary/[0.015] transition-all"
+            transition={{ delay: index * 0.02, duration: 0.3 }}
+            className="group"
           >
-            <Link to={`/centers/${center.slug}`} className="block py-3">
-              <div className="flex items-center gap-3">
+            <Link to={`/centers/${center.slug}`} className="block">
+              <div className="flex items-start gap-3">
+                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-light text-text-primary group-hover:text-text-primary/60 transition-colors leading-snug line-clamp-1">
+                  <h3 className="text-sm font-light text-text-primary group-hover:text-text-primary/60 transition-colors leading-snug mb-1.5">
                     {center.name}
                   </h3>
-                </div>
 
-                <div className="hidden md:flex items-center gap-3 text-xs text-text-tertiary shrink-0">
-                  <span>{Number(center.talksCount)} talks</span>
-                  {Number(center.teachersCount) > 0 && (
-                    <span>{Number(center.teachersCount)} teachers</span>
-                  )}
+                  {/* Stats - Stacked */}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-tertiary">
+                    <span>{Number(center.talksCount)} talks</span>
+                    {Number(center.teachersCount) > 0 && (
+                      <>
+                        <span className="text-text-tertiary/40">·</span>
+                        <span>{Number(center.teachersCount)} teachers</span>
+                      </>
+                    )}
+                    {Number(center.retreatsCount) > 0 && (
+                      <>
+                        <span className="text-text-tertiary/40">·</span>
+                        <span>{Number(center.retreatsCount)} retreats</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </Link>

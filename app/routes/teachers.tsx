@@ -88,7 +88,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
       return withPagination({
         query: query.$dynamic(),
-        params: { page, perPage: 100 },
+        params: { page, perPage: 25 },
       });
     },
   );
@@ -201,21 +201,21 @@ export default function Teachers() {
         </div>
       </motion.div>
 
-      {/* Teachers List */}
-      <div className="space-y-0">
+      {/* Teachers List - 2 Column Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {teachersList.map((teacher, index) => (
           <motion.div
             key={teacher.id}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: index * 0.005, duration: 0.2 }}
-            className="group border-b border-text-primary/8 hover:bg-text-primary/[0.015] transition-all"
+            transition={{ delay: index * 0.02, duration: 0.3 }}
+            className="group"
           >
-            <Link to={`/teachers/${teacher.slug}`} className="block py-3">
-              <div className="flex items-center gap-3">
+            <Link to={`/teachers/${teacher.slug}`} className="block">
+              <div className="flex items-start gap-3">
                 {/* Profile Image */}
                 {teacher.profileImageUrl && (
-                  <div className="shrink-0 w-8 h-8 rounded-full overflow-hidden bg-text-primary/5">
+                  <div className="shrink-0 mt-0.5 w-8 h-8 rounded-full overflow-hidden bg-text-primary/5">
                     <img
                       src={teacher.profileImageUrl}
                       alt={teacher.name}
@@ -226,17 +226,26 @@ export default function Teachers() {
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-light text-text-primary group-hover:text-text-primary/60 transition-colors leading-snug line-clamp-1">
+                  <h3 className="text-sm font-light text-text-primary group-hover:text-text-primary/60 transition-colors leading-snug mb-1.5">
                     {teacher.name}
                   </h3>
-                </div>
 
-                {/* Stats */}
-                <div className="hidden md:flex items-center gap-3 text-xs text-text-tertiary shrink-0">
-                  <span>{Number(teacher.talksCount)} talks</span>
-                  {Number(teacher.retreatsCount) > 0 && (
-                    <span>{Number(teacher.retreatsCount)} retreats</span>
-                  )}
+                  {/* Stats - Stacked */}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-tertiary">
+                    <span>{Number(teacher.talksCount)} talks</span>
+                    {Number(teacher.retreatsCount) > 0 && (
+                      <>
+                        <span className="text-text-tertiary/40">·</span>
+                        <span>{Number(teacher.retreatsCount)} retreats</span>
+                      </>
+                    )}
+                    {Number(teacher.centersCount) > 0 && (
+                      <>
+                        <span className="text-text-tertiary/40">·</span>
+                        <span>{Number(teacher.centersCount)} centers</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </Link>

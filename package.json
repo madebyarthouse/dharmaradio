@@ -18,7 +18,7 @@
     "db:import:local-to-remote": "node --import tsx scripts/db-import-local-to-remote.ts",
     "data:backfill:missing": "node --import tsx scripts/backfill-missing-production-data.ts",
     "d1:init:local": "wrangler d1 execute dharmaradio --local --file='./fixtures/dump.sql'",
-    "postinstall": "pnpm run cf-typegen"
+    "postinstall": "node scripts/postinstall.mjs"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.13.5",

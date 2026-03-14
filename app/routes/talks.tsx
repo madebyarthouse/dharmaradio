@@ -102,7 +102,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
       return withPagination({
         query: query.$dynamic(),
-        params: { page, perPage: 100 },
+        params: { page, perPage: 25 },
       });
     }
   );
@@ -267,8 +267,8 @@ export default function Talks() {
         </div>
       </motion.div>
 
-      {/* Talks List */}
-      <div className="space-y-0">
+      {/* Talks List - 2 Column Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {talksList.map((talk, index) => {
           const isCurrentlyPlaying = currentTalk?.id === String(talk.id) && isPlaying;
 
@@ -277,14 +277,14 @@ export default function Talks() {
               key={talk.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: index * 0.005, duration: 0.2 }}
-              className="group border-b border-text-primary/8 hover:bg-text-primary/[0.015] transition-all"
+              transition={{ delay: index * 0.02, duration: 0.3 }}
+              className="group"
             >
-              <div className="py-3 flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 {/* Play Button */}
                 <button
                   onClick={() => handlePlayTalk(talk)}
-                  className="shrink-0 w-7 h-7 rounded-full border border-text-primary/20 flex items-center justify-center hover:border-text-primary hover:bg-text-primary/5 active:bg-text-primary active:text-white transition-all cursor-pointer"
+                  className="shrink-0 mt-0.5 w-8 h-8 rounded-full border border-text-primary/20 flex items-center justify-center hover:border-text-primary hover:bg-text-primary/5 active:bg-text-primary active:text-white transition-all cursor-pointer"
                   aria-label={isCurrentlyPlaying ? "Pause" : "Play"}
                 >
                   {isCurrentlyPlaying ? (
@@ -294,48 +294,50 @@ export default function Talks() {
                       className="w-1.5 h-1.5 bg-text-primary rounded-full"
                     />
                   ) : (
-                    <Play size={11} fill="currentColor" className="ml-0.5" />
+                    <Play size={12} fill="currentColor" className="ml-0.5" />
                   )}
                 </button>
-
-                {/* Teacher Profile Image */}
-                {talk.teacher?.profileImageUrl && (
-                  <Link
-                    to={`/teachers/${talk.teacher.slug}`}
-                    className="shrink-0 w-7 h-7 rounded-full overflow-hidden bg-text-primary/5"
-                  >
-                    <img
-                      src={talk.teacher.profileImageUrl}
-                      alt={talk.teacher.name}
-                      className="w-full h-full object-cover grayscale opacity-80"
-                    />
-                  </Link>
-                )}
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <Link
                     to={`/talks/${talk.slug}`}
-                    className="block group/link"
+                    className="block group/link mb-1.5"
                   >
-                    <h3 className="text-sm font-light text-text-primary group-hover/link:text-text-primary/60 transition-colors leading-snug line-clamp-1">
+                    <h3 className="text-sm font-light text-text-primary group-hover/link:text-text-primary/60 transition-colors leading-snug">
                       {talk.title}
                     </h3>
                   </Link>
-                </div>
 
-                {/* Metadata - Horizontal */}
-                <div className="hidden md:flex items-center gap-3 text-xs text-text-tertiary shrink-0">
-                  {talk.teacher?.name && (
-                    <Link
-                      to={`/teachers/${talk.teacher.slug}`}
-                      className="hover:text-text-secondary transition-colors w-[100px] truncate"
-                    >
-                      {talk.teacher.name}
-                    </Link>
-                  )}
-                  <span className="tabular-nums w-[80px]">{formatDate(talk.publicationDate)}</span>
-                  <span className="tabular-nums w-[50px]">{formatDuration(talk.duration)}</span>
+                  {/* Metadata - Stacked */}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-tertiary">
+                    {talk.teacher?.name && (
+                      <>
+                        {talk.teacher.profileImageUrl && (
+                          <Link
+                            to={`/teachers/${talk.teacher.slug}`}
+                            className="shrink-0 w-5 h-5 rounded-full overflow-hidden bg-text-primary/5"
+                          >
+                            <img
+                              src={talk.teacher.profileImageUrl}
+                              alt={talk.teacher.name}
+                              className="w-full h-full object-cover grayscale opacity-80"
+                            />
+                          </Link>
+                        )}
+                        <Link
+                          to={`/teachers/${talk.teacher.slug}`}
+                          className="hover:text-text-secondary transition-colors"
+                        >
+                          {talk.teacher.name}
+                        </Link>
+                        <span className="text-text-tertiary/40">·</span>
+                      </>
+                    )}
+                    <span>{formatDate(talk.publicationDate)}</span>
+                    <span className="text-text-tertiary/40">·</span>
+                    <span className="tabular-nums">{formatDuration(talk.duration)}</span>
+                  </div>
                 </div>
               </div>
             </motion.div>
