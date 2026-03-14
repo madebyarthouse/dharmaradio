@@ -193,25 +193,22 @@ export default function Retreats() {
             key={retreat.id}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: index * 0.01, duration: 0.3 }}
+            transition={{ delay: index * 0.005, duration: 0.2 }}
             className="group border-b border-text-primary/8 hover:bg-text-primary/[0.015] transition-all"
           >
-            <Link to={`/retreats/${retreat.slug}`} className="block py-5">
-              <div className="flex items-start">
+            <Link to={`/retreats/${retreat.slug}`} className="block py-3">
+              <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xl font-light text-text-primary group-hover:text-text-primary/60 transition-colors leading-tight mb-2.5 italic">
+                  <h3 className="text-sm font-light text-text-primary group-hover:text-text-primary/60 transition-colors leading-snug line-clamp-1 italic">
                     {retreat.title}
                   </h3>
+                </div>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-text-tertiary tracking-wide">
-                    <span>{Number(retreat.talksCount)} talks</span>
-                    {Number(retreat.teachersCount) > 0 && (
-                      <>
-                        <span className="text-text-tertiary/40">·</span>
-                        <span>{Number(retreat.teachersCount)} teachers</span>
-                      </>
-                    )}
-                  </div>
+                <div className="hidden md:flex items-center gap-3 text-xs text-text-tertiary shrink-0">
+                  <span>{Number(retreat.talksCount)} talks</span>
+                  {Number(retreat.teachersCount) > 0 && (
+                    <span>{Number(retreat.teachersCount)} teachers</span>
+                  )}
                 </div>
               </div>
             </Link>
@@ -224,24 +221,24 @@ export default function Retreats() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="pt-12 pb-4 flex items-center justify-between border-t border-text-primary/10 mt-8"
+          className="pt-6 pb-4 flex items-center justify-between border-t border-text-primary/10 mt-6"
         >
           <button
             onClick={() => goToPage(Math.max(1, pagination.current - 1))}
             disabled={pagination.current === 1}
-            className="px-5 py-2.5 text-sm text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer tracking-wide"
+            className="px-4 py-2 text-xs text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             ← Previous
           </button>
 
-          <div className="text-sm text-text-tertiary tracking-wide">
+          <div className="text-xs text-text-tertiary">
             {pagination.current} / {pagination.pages}
           </div>
 
           <button
             onClick={() => goToPage(Math.min(pagination.pages, pagination.current + 1))}
             disabled={pagination.current === pagination.pages}
-            className="px-5 py-2.5 text-sm text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer tracking-wide"
+            className="px-4 py-2 text-xs text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             Next →
           </button>
