@@ -1,9 +1,12 @@
 import { createRequestHandler } from "react-router";
 import { cronScheduleMap, runCronJob, type CronJob } from "../app/cron/jobs";
+import { getCacheEpoch } from "../app/lib/cache.server";
 
 const CACHE_NAMESPACE = "dharmaradio:ssr";
+const CACHE_EPOCH_PARAM = "__ce";
 const CACHE_VERSION_PARAM = "__cv";
 const CACHE_DEBUG_PARAM = "cacheDebug";
+const isEdgeCacheEnabled = import.meta.env.PROD;
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -42,9 +45,10 @@ const getCacheDebugFlag = (request: Request) => {
 const getCacheVersion = (env: Env) =>
   env.CF_VERSION_METADATA?.id ?? "unversioned";
 
-const createCacheKey = (request: Request, env: Env) => {
+const createCacheKey = async (request: Request, env: Env) => {
   const keyUrl = new URL(request.url);
   keyUrl.searchParams.delete(CACHE_DEBUG_PARAM);
+  keyUrl.searchParams.set(CACHE_EPOCH_PARAM, await getCacheEpoch(env.DB_QUERY_CACHE));
   keyUrl.searchParams.set(CACHE_VERSION_PARAM, getCacheVersion(env));
   return new Request(keyUrl.toString(), { method: "GET" });
 };
@@ -63,7 +67,7 @@ export default {
   async fetch(request, env, ctx) {
     const handlerContext = { cloudflare: { env, ctx } };
 
-    if (request.method !== "GET") {
+    if (request.method !== "GET" || !isEdgeCacheEnabled) {
       return requestHandler(request, handlerContext);
     }
 
@@ -78,7 +82,7 @@ export default {
     const cacheDebug = getCacheDebugFlag(request);
 
     const cache = await caches.open(CACHE_NAMESPACE);
-    const cacheKey = createCacheKey(request, env);
+    const cacheKey = await createCacheKey(request, env);
 
     if (!bypassRead && !hasSensitiveHeaders) {
       try {

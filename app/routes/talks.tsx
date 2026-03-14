@@ -35,16 +35,22 @@ export const meta: MetaFunction = () => {
 };
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
+  const { searchQuery, page, sort, hasSearch } = getRequestParams(request, {
+    field: "date",
+    order: "desc",
+  });
+
   return withCachedJson(
     context.cloudflare.env.DB_QUERY_CACHE,
-    `talks:${request.url}`,
+    [
+      "talks",
+      `page=${page}`,
+      `q=${searchQuery}`,
+      `sort=${sort.field}`,
+      `order=${sort.order}`,
+    ].join(":"),
     900,
     async () => {
-      const { searchQuery, page, sort, hasSearch } = getRequestParams(request, {
-        field: "date",
-        order: "desc",
-      });
-
       const database = db(context.cloudflare.env.DB);
 
       const query = database
@@ -96,7 +102,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
       return withPagination({
         query: query.$dynamic(),
-        params: { page, perPage: 50 },
+        params: { page, perPage: 100 },
       });
     }
   );
@@ -193,17 +199,17 @@ export default function Talks() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-8 py-16">
+    <div className="max-w-6xl mx-auto px-6 md:px-8 py-6 md:py-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-16"
+        className="mb-6"
       >
-        <h1 className="text-7xl font-serif font-light text-text-primary mb-4 tracking-tight leading-none">
+        <h1 className="text-4xl md:text-5xl font-serif font-light text-text-primary mb-2 tracking-tight leading-none">
           Talks
         </h1>
-        <p className="text-text-tertiary text-lg font-light tracking-wide">
+        <p className="text-text-tertiary text-sm font-light tracking-wide">
           {pagination.total.toLocaleString()} recordings
         </p>
       </motion.div>
@@ -213,19 +219,19 @@ export default function Talks() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
-        className="mb-12 flex items-end justify-between gap-8 pb-6 border-b border-text-primary/10"
+        className="mb-6 flex flex-col md:flex-row items-start md:items-end justify-between gap-3 md:gap-6 pb-4 border-b border-text-primary/10"
       >
-        <form onSubmit={handleSearch} className="flex-1 max-w-sm">
+        <form onSubmit={handleSearch} className="w-full md:flex-1 md:max-w-sm">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search talks..."
-            className="w-full px-0 py-2.5 border-b-2 border-text-primary/15 bg-transparent focus:border-text-primary/40 focus:outline-none text-text-primary placeholder:text-text-tertiary/60 transition-colors text-base"
+            className="w-full px-0 py-2 border-b border-text-primary/15 bg-transparent focus:border-text-primary/40 focus:outline-none text-text-primary placeholder:text-text-tertiary/60 transition-colors text-sm"
           />
         </form>
 
-        <div className="flex items-center gap-1 text-sm tracking-wide">
+        <div className="flex items-center gap-1 text-xs tracking-wide overflow-x-auto w-full md:w-auto">
           <button
             onClick={() => handleSort("date")}
             className={`px-3 py-2 transition-colors cursor-pointer ${
@@ -351,24 +357,24 @@ export default function Talks() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="py-12 flex items-center justify-between border-t border-text-primary/10 mt-12"
+          className="pt-12 pb-4 flex items-center justify-between border-t border-text-primary/10 mt-8"
         >
           <button
             onClick={() => goToPage(Math.max(1, pagination.current - 1))}
             disabled={pagination.current === 1}
-            className="px-4 py-2 text-sm font-light text-text-primary hover:text-text-primary/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            className="px-5 py-2.5 text-sm text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer tracking-wide"
           >
             ← Previous
           </button>
 
-          <div className="flex items-center gap-1 text-sm font-light text-text-tertiary">
-            Page {pagination.current} of {pagination.pages}
+          <div className="text-sm text-text-tertiary tracking-wide">
+            {pagination.current} / {pagination.pages}
           </div>
 
           <button
             onClick={() => goToPage(Math.min(pagination.pages, pagination.current + 1))}
             disabled={pagination.current === pagination.pages}
-            className="px-4 py-2 text-sm font-light text-text-primary hover:text-text-primary/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            className="px-5 py-2.5 text-sm text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer tracking-wide"
           >
             Next →
           </button>

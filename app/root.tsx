@@ -81,10 +81,10 @@ export default function App() {
             <SkyBackground />
 
             {/* Main app container */}
-            <div className="relative z-[2] h-full flex flex-col px-10 py-10">
+            <div className="relative z-[2] h-full flex flex-col">
               <Navbar />
 
-              <div className="flex-1 overflow-auto scrollbar-none">
+              <div className="flex-1 overflow-auto scrollbar-none scroll-pb-32">
                 <Outlet />
               </div>
 

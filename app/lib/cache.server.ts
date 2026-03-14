@@ -1,13 +1,16 @@
 const CACHE_EPOCH_KEY = "cache:epoch";
+const isCacheEnabled = import.meta.env.PROD;
 
 const toJson = <T>(value: T) => JSON.stringify(value);
 
 export const getCacheEpoch = async (kv?: KVNamespace) => {
+  if (!isCacheEnabled) return "dev";
   if (!kv) return "0";
   return (await kv.get(CACHE_EPOCH_KEY)) ?? "0";
 };
 
 export const bumpCacheEpoch = async (kv?: KVNamespace) => {
+  if (!isCacheEnabled) return "dev";
   if (!kv) return "0";
   const nextEpoch = Date.now().toString();
   await kv.put(CACHE_EPOCH_KEY, nextEpoch);
@@ -26,6 +29,7 @@ export const getCachedJson = async <T>(
   kv: KVNamespace | undefined,
   key: string,
 ): Promise<T | null> => {
+  if (!isCacheEnabled) return null;
   if (!kv) return null;
   const cacheKey = await buildKvCacheKey(kv, key);
   const value = await kv.get(cacheKey);
@@ -38,6 +42,7 @@ export const putCachedJson = async <T>(
   value: T,
   expirationTtl: number,
 ) => {
+  if (!isCacheEnabled) return;
   if (!kv) return;
   const cacheKey = await buildKvCacheKey(kv, key);
   await kv.put(cacheKey, toJson(value), { expirationTtl });

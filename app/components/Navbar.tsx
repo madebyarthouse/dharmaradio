@@ -1,5 +1,4 @@
 import { Link, useLocation } from "react-router";
-import { Radio } from "lucide-react";
 
 export function Navbar() {
   const location = useLocation();
@@ -12,61 +11,75 @@ export function Navbar() {
   ];
 
   return (
-    <header className="flex justify-between items-center mb-4 pb-3">
-      {/* Logo */}
-      <Link
-        to="/"
-        className="flex items-center gap-2.5 text-text-primary hover:opacity-80 transition-opacity"
-      >
-        <div className="neumorphic-button rounded-full w-10 h-10 flex items-center justify-center">
-          <Radio size={18} className="text-blue-500" />
-        </div>
-        <div>
-          <div className="text-base font-semibold leading-tight">Dharma Radio</div>
-          <div className="text-[0.65rem] text-text-secondary uppercase tracking-wide">
-            Archive
+    <header className="border-b border-text-primary/10 mb-8 md:mb-12">
+      <div className="max-w-5xl mx-auto px-6 md:px-8 py-6 flex justify-between items-center">
+        {/* Logo */}
+        <Link
+          to="/"
+          className="group flex items-center gap-3 text-text-primary"
+        >
+          <div className="w-11 h-11 rounded-full border border-text-primary/20 flex items-center justify-center group-hover:border-text-primary/40 transition-colors">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="2" />
+              <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+            </svg>
           </div>
-        </div>
-      </Link>
+          <div>
+            <div className="text-lg font-serif font-light leading-tight tracking-tight">Dharma Radio</div>
+            <div className="text-[0.6rem] text-text-tertiary uppercase tracking-[0.15em] font-light">
+              Archive
+            </div>
+          </div>
+        </Link>
 
-      {/* Navigation */}
-      <nav className="hidden md:flex items-center gap-2">
-        {links.map((link) => {
-          const isActive = location.pathname.startsWith(link.path);
-          return (
-            <Link
-              key={link.path}
-              to={link.path}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                isActive
-                  ? "neumorphic-card-pressed text-text-primary"
-                  : "text-text-secondary hover:text-text-primary hover:bg-white/40"
-              }`}
-            >
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
+        {/* Navigation - Desktop */}
+        <nav className="hidden md:flex items-center gap-1">
+          {links.map((link) => {
+            const isActive = location.pathname.startsWith(link.path);
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`px-4 py-2 text-sm tracking-wide transition-colors ${
+                  isActive
+                    ? "text-text-primary font-medium"
+                    : "text-text-tertiary hover:text-text-secondary"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
 
-      {/* Mobile Menu - Simple for now */}
-      <div className="md:hidden flex items-center gap-2">
-        {links.map((link) => {
-          const isActive = location.pathname.startsWith(link.path);
-          return (
-            <Link
-              key={link.path}
-              to={link.path}
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                isActive
-                  ? "neumorphic-card-pressed text-text-primary"
-                  : "text-text-secondary"
-              }`}
-            >
-              {link.label.charAt(0)}
-            </Link>
-          );
-        })}
+        {/* Navigation - Mobile */}
+        <nav className="md:hidden flex items-center gap-1">
+          {links.map((link) => {
+            const isActive = location.pathname.startsWith(link.path);
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`px-3 py-1.5 text-sm tracking-wide transition-colors ${
+                  isActive
+                    ? "text-text-primary font-medium border-b border-text-primary"
+                    : "text-text-tertiary"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
     </header>
   );
