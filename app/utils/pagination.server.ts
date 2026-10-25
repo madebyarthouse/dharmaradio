@@ -55,7 +55,8 @@ export async function withPagination<TItem>({
 
   // Extract total from first row and remove total_count from results
   const total = Number(results[0].total_count);
-  const items = results.map(({ total_count, ...rest }) => rest) as TItem[];
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const items = results.map(({ total_count: _total, ...rest }) => rest) as TItem[];
 
   return {
     items,

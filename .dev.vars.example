@@ -1,3 +1,12 @@
+# Optional Drizzle tooling credentials (do not set real values in this example).
 CLOUDFLARE_ACCOUNT_ID=
 CLOUDFLARE_DATABASE_ID=
 CLOUDFLARE_API_TOKEN=
+
+# Copy to .dev.vars (never commit real secrets).
+# Generate a random secret of at least 32 characters for every environment.
+BETTER_AUTH_SECRET=replace-with-a-random-secret-at-least-32-characters
+BETTER_AUTH_URL=http://localhost:5173
+# Verified Cloudflare Email Sending sender; must match wrangler allowed_sender_addresses.
+EMAIL_FROM=noreply@example.com
+# In local development OTPs are logged to the Worker console; no real emails are sent.

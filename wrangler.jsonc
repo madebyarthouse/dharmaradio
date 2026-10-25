@@ -6,36 +6,44 @@
   "compatibility_date": "2025-04-04",
   "compatibility_flags": [
     "nodejs_compat",
-    "nodejs_compat_populate_process_env"
+    "nodejs_compat_populate_process_env",
   ],
   "assets": {
-    "directory": "./build/client"
+    "directory": "./build/client",
   },
   "version_metadata": {
-    "binding": "CF_VERSION_METADATA"
+    "binding": "CF_VERSION_METADATA",
   },
+  // TODO: onboard the production sender domain in Cloudflare Email Sending,
+  // then replace this address and set EMAIL_FROM to the same verified sender.
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": ["TODO-noreply@example.com"],
+    },
+  ],
   "observability": {
-    "enabled": true
+    "enabled": true,
   },
   "limits": {
-    "cpu_ms": 300000
+    "cpu_ms": 300000,
   },
   "triggers": {
-    "crons": ["0 */6 * * *", "0 3 * * *"]
+    "crons": ["0 */6 * * *", "0 3 * * *"],
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "dharmaradio",
       "database_id": "734fc32e-ec13-439e-b211-d9131fc1bf96",
-      "migrations_dir": "./app/db/migrations"
-    }
+      "migrations_dir": "./app/db/migrations",
+    },
   ],
   "kv_namespaces": [
     {
       "binding": "DB_QUERY_CACHE",
       "id": "c6b2f2e807e845568a563a5ec0781cee",
-      "preview_id": "c6b656625d1a4f3cb3cfab85c88e880d"
-    }
-  ]
+      "preview_id": "c6b656625d1a4f3cb3cfab85c88e880d",
+    },
+  ],
 }

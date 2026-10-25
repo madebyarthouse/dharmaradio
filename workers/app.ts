@@ -9,6 +9,7 @@ const CACHE_DEBUG_PARAM = "cacheDebug";
 const isEdgeCacheEnabled = import.meta.env.PROD;
 
 const requestHandler = createRequestHandler(
+  // eslint-disable-next-line import/no-unresolved -- React Router supplies this virtual module at build time.
   () => import("virtual:react-router/server-build"),
   import.meta.env.MODE,
 );
@@ -48,7 +49,10 @@ const getCacheVersion = (env: Env) =>
 const createCacheKey = async (request: Request, env: Env) => {
   const keyUrl = new URL(request.url);
   keyUrl.searchParams.delete(CACHE_DEBUG_PARAM);
-  keyUrl.searchParams.set(CACHE_EPOCH_PARAM, await getCacheEpoch(env.DB_QUERY_CACHE));
+  keyUrl.searchParams.set(
+    CACHE_EPOCH_PARAM,
+    await getCacheEpoch(env.DB_QUERY_CACHE),
+  );
   keyUrl.searchParams.set(CACHE_VERSION_PARAM, getCacheVersion(env));
   return new Request(keyUrl.toString(), { method: "GET" });
 };
@@ -67,7 +71,11 @@ export default {
   async fetch(request, env, ctx) {
     const handlerContext = { cloudflare: { env, ctx } };
 
-    if (request.method !== "GET" || !isEdgeCacheEnabled) {
+    if (
+      new URL(request.url).pathname.startsWith("/api/") ||
+      request.method !== "GET" ||
+      !isEdgeCacheEnabled
+    ) {
       return requestHandler(request, handlerContext);
     }
 

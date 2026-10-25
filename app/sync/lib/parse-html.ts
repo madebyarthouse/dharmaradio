@@ -40,7 +40,6 @@ export const parseTalksFromHtml = (html: string): ScrapedTalk[] => {
     const description = descriptionRow?.textContent?.trim() ?? null;
 
     // Parse center and retreat links
-    const centerText = linksRow?.textContent?.trim() ?? "";
     const links = linksRow?.querySelectorAll("a") ?? [];
 
     const parsedLinks = Array.from(links).map((link) => ({

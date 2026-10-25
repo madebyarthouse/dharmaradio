@@ -91,7 +91,7 @@ async function testCloudflareToken() {
       if (d1Data.result.length > 0) {
         console.log(
           "   Database names:",
-          d1Data.result.map((db: any) => db.name).join(", "),
+          d1Data.result.map((db: { name: string }) => db.name).join(", "),
         );
       }
     } else {
