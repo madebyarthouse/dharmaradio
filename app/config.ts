@@ -9,6 +9,7 @@ type Config = {
   productionDomain: string;
   productionUrl: string;
   themeColor: string;
+  themeColorDark: string;
   manifest: Manifest;
 };
 
@@ -37,27 +38,34 @@ type Manifest = {
 export const config: Config = {
   productionDomain,
   productionUrl,
-  themeColor: "#608063",
+  themeColor: "#f6f1e9",
+  themeColorDark: "#141628",
   manifest: {
     name: "Dharma Radio",
     shortName: "DharmaRadio",
     description: "A podcast player for meditation talks",
-    backgroundColor: "#ffffff",
-    themeColor: "#608063",
+    backgroundColor: "#f6f1e9",
+    themeColor: "#f6f1e9",
     display: "standalone",
     orientation: "portrait",
     icons: [
       {
-        src: "/web-app-manifest-192x192.png",
-        sizes: "192x192",
+        src: "/icons/maskable-512.png",
+        sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
       },
       {
-        src: "/web-app-manifest-512x512.png",
+        src: "/icons/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-512.png",
         sizes: "512x512",
         type: "image/png",
-        purpose: "maskable",
+        purpose: "any",
       },
     ],
   },

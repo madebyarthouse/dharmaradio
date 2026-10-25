@@ -19,7 +19,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     name: config.manifest.name,
     short_name: config.manifest.shortName,
     description: config.manifest.description,
+    id: "/",
+    scope: "/",
     start_url: "/",
+    categories: ["education", "lifestyle"],
+    shortcuts: [
+      {
+        name: "Library",
+        url: "/library",
+        description: "Your saved talks and listening progress",
+      },
+      { name: "Talks", url: "/talks", description: "Browse meditation talks" },
+    ],
     display: config.manifest.display,
     background_color: config.manifest.backgroundColor,
     theme_color: config.manifest.themeColor,

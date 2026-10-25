@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { pwaPlugin } from "./app/pwa/vite-plugin";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
@@ -26,5 +27,6 @@ export default defineConfig({
     tailwindcss(),
     reactRouter(),
     tsconfigPaths(),
+    pwaPlugin(),
   ],
 });
