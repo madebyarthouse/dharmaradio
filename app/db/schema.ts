@@ -419,3 +419,17 @@ export const playlistItems = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.playlistId, t.talkId] })],
 );
+
+export const practiceSessions = sqliteTable(
+  "practice_sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: libraryUserId(),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
+    durationSec: integer("duration_sec").notNull(),
+    kind: text("kind", { enum: ["timer", "guided"] }).notNull(),
+    talkId: integer("talk_id").references(() => talks.id, { onDelete: "set null" }),
+    createdAt: libraryTimestamp("created_at"),
+  },
+  (t) => [index("practice_sessions_user_started_idx").on(t.userId, t.startedAt)],
+);

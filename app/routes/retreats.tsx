@@ -2,7 +2,7 @@ import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { SearchX } from "lucide-react";
 import { formatCount } from "~/lib/format";
-import { CollectionCard } from "~/components/collection-cards";
+import { RetreatTicket } from "~/components/collection-cards";
 import { EmptyState, PageHeader, Pagination, SearchField, SortTabs } from "~/components/ui/primitives";
 import { db } from "~/db/client.server";
 import { retreats, talks } from "~/db/schema";
@@ -43,7 +43,7 @@ export const meta: MetaFunction = () => {
 export async function loader({ request, context }: LoaderFunctionArgs) {
   return withCachedJson(
     context.cloudflare.env.DB_QUERY_CACHE,
-    `retreats:${request.url}`,
+    `retreats:v2:${request.url}`,
     900,
     async () => {
       const { searchQuery, page, sort, hasSearch } = getRequestParams(request, {
@@ -65,6 +65,9 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
           teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
             "teachers_count",
           ),
+          // Retreats have no dates of their own; their talks do (stored in seconds).
+          firstDate: sql<number>`min(${talks.publicationDate}) * 1000`.as("first_date"),
+          lastDate: sql<number>`max(${talks.publicationDate}) * 1000`.as("last_date"),
           ...totalCountField,
         })
         .from(retreats)
@@ -79,6 +82,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
               talks: { column: sql`talks_count` },
               teachers: { column: sql`teachers_count` },
               title: { column: retreats.title },
+              date: { column: sql`last_date` },
             },
           }),
         );
@@ -99,19 +103,20 @@ export default function Retreats() {
   return (
     <div className="animate-rise">
       <PageHeader
-        eyebrow="Retreats"
+        breadcrumbs={[{ label: "Listen", to: "/listen" }, { label: "Retreats", to: "/retreats" }]}
         title={q ? <>Retreats matching “{q}”</> : "Days of practice, recorded"}
         description={`${formatCount(pagination.total, "retreat")}. Listen through a whole retreat, talk by talk.`}
       >
         <SearchField placeholder="Find a retreat" defaultValue={q} className="max-w-xl" />
       </PageHeader>
 
-      <div className="sticky top-14 z-20 -mx-5 mb-4 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:top-0 lg:-mx-12 lg:px-12">
+      <div className="sticky top-[var(--bar-h)] z-20 -mx-5 mb-4 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
         <SortTabs
           current={params.get("sort") ?? "talks"}
           order={params.get("order") ?? "desc"}
           options={[
             { field: "talks", label: "Most talks" },
+            { field: "date", label: "Newest" },
             { field: "teachers", label: "Most teachers" },
             { field: "title", label: "Title", defaultOrder: "asc" },
           ]}
@@ -119,18 +124,13 @@ export default function Retreats() {
       </div>
 
       {items.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {items.map((retreat) => (
-            <CollectionCard
-              key={retreat.id}
-              to={`/retreats/${retreat.slug}`}
-              title={retreat.title}
-              description={retreat.description}
-              meta={`${formatCount(Number(retreat.talksCount), "talk")} · ${formatCount(Number(retreat.teachersCount), "teacher")}`}
-              italic
-            />
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {items.map((retreat, i) => (
+            <li key={retreat.id} className="stagger" style={{ "--i": i } as React.CSSProperties}>
+              <RetreatTicket retreat={retreat} className="h-full w-full sm:w-full" />
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <EmptyState icon={<SearchX size={20} />} title="No retreats found">
           Try a place, a season, or a single word from the title.

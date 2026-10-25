@@ -2,10 +2,10 @@ import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { useAudio } from "~/contexts/audio-context";
 import { fromFlatRow, toPlayerTalk } from "~/lib/talk";
-import { formatCount, formatDate, formatDuration } from "~/lib/format";
+import { dateParts, formatCount, formatDateRange, formatDuration } from "~/lib/format";
 import { TalkList } from "~/components/talk-row";
 import { TeacherTile } from "~/components/collection-cards";
-import { Pagination, Section, SortTabs, buttonClass } from "~/components/ui/primitives";
+import { Breadcrumbs, ListBar, MetaList, Pagination, Shelf, SortTabs, buttonClass, titleClass } from "~/components/ui/primitives";
 import { PlayGlyph } from "~/components/play-glyph";
 import { cn } from "~/lib/cn";
 import { eq, like, sql } from "drizzle-orm";
@@ -110,12 +110,23 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
     .where(eq(talks.retreatId, retreat.id))
     .groupBy(teachers.id);
 
-  const [paginatedTalks, teachersData] = await Promise.all([
+  // The retreat's dates are its talks' first and last days (stored in seconds).
+  const spanQuery = database
+    .select({
+      firstDate: sql<number>`min(${talks.publicationDate}) * 1000`,
+      lastDate: sql<number>`max(${talks.publicationDate}) * 1000`,
+      totalDuration: sql<number>`coalesce(sum(${talks.duration}), 0)`,
+    })
+    .from(talks)
+    .where(eq(talks.retreatId, retreat.id));
+
+  const [paginatedTalks, teachersData, [span]] = await Promise.all([
     withPagination({
       query: finalQuery.$dynamic(),
       params: { page, perPage: 50 },
     }),
     teachersQuery,
+    spanQuery,
   ]);
 
   return {
@@ -123,11 +134,12 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
     talks: paginatedTalks.items,
     pagination: paginatedTalks.pagination,
     teachers: teachersData,
+    span: span ?? { firstDate: null, lastDate: null, totalDuration: 0 },
   };
 }
 
 export default function RetreatDetail() {
-  const { retreat, talks: rows, pagination, teachers: teacherList } = useLoaderData<typeof loader>();
+  const { retreat, talks: rows, pagination, teachers: teacherList, span } = useLoaderData<typeof loader>();
   const [params] = useSearchParams();
   const audio = useAudio();
   const sort = params.get("sort") ?? "date";
@@ -136,10 +148,8 @@ export default function RetreatDetail() {
   const talkItems = rows.map((row) =>
     fromFlatRow(row, { retreat: { title: retreat.title, slug: retreat.slug } }),
   );
-  const totalDuration = talkItems.reduce((sum, t) => sum + t.duration, 0);
-  const dates = talkItems
-    .map((t) => (t.publicationDate ? new Date(t.publicationDate).getTime() : NaN))
-    .filter(Number.isFinite);
+  const start = dateParts(span.firstDate);
+  const range = formatDateRange(span.firstDate, span.lastDate);
 
   const playFromStart = () => {
     // Retreats are best heard in order, oldest first.
@@ -152,48 +162,60 @@ export default function RetreatDetail() {
 
   return (
     <div className="animate-rise">
-      <header className="relative -mx-5 overflow-hidden px-5 pb-8 pt-10 sm:-mx-8 sm:px-8 md:pt-16 lg:-mx-12 lg:px-12">
-        <div aria-hidden className="dusk-glow absolute inset-0" />
-        <div className="relative">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-accent-ink">Retreat</p>
-          <h1 className="mt-3 max-w-3xl text-balance font-serif text-4xl italic leading-[1.05] tracking-tight md:text-6xl">
-            {retreat.title}
-          </h1>
-          <p className="mt-4 text-sm text-ink-soft">
-            {formatCount(pagination.total, "talk")}
-            {teacherList.length ? ` · ${formatCount(teacherList.length, "teacher")}` : ""}
-            {dates.length && pagination.pages <= 1
-              ? ` · ${formatDate(Math.min(...dates))}${Math.max(...dates) - Math.min(...dates) > 86400000 ? ` – ${formatDate(Math.max(...dates))}` : ""}`
-              : ""}
-            {pagination.pages <= 1 && totalDuration ? ` · ${formatDuration(totalDuration)}` : ""}
-          </p>
-          {retreat.description ? (
-            <p className="mt-6 max-w-2xl whitespace-pre-line text-pretty font-serif text-lg leading-relaxed text-ink-soft">
-              {retreat.description}
-            </p>
+      <header className="relative pb-8 pt-7 md:pt-12">
+        <Breadcrumbs
+          items={[
+            { label: "Listen", to: "/listen" },
+            { label: "Retreats", to: "/retreats" },
+            { label: retreat.title, to: `/retreats/${retreat.slug}` },
+          ]}
+        />
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
+          {/* The ticket stub: a retreat is led by its dates. */}
+          {start ? (
+            <div className="flex w-28 shrink-0 flex-col items-center justify-center rounded-xl bg-accent-wash py-4 text-accent-ink ring-1 ring-inset ring-line md:w-32">
+              <span className="text-xs">{start.month}</span>
+              <span className="font-serif text-[3.25rem] leading-none tabular-nums text-ink">{start.day}</span>
+              <span className="mt-1 text-xs tabular-nums">{start.year}</span>
+            </div>
           ) : null}
-          <button type="button" onClick={playFromStart} className={cn(buttonClass("primary"), "mt-7 pl-2 pr-5")}>
-            <span className="flex size-8 items-center justify-center rounded-full bg-accent text-on-accent">
-              <PlayGlyph playing={false} size={13} />
-            </span>
-            Play from the beginning
-          </button>
+          <div className="min-w-0">
+            {range ? <p className="mb-2 text-[0.8125rem] tabular-nums text-ink-soft">{range}</p> : null}
+            <h1 className={cn(titleClass, "max-w-3xl")}>{retreat.title}</h1>
+            <MetaList
+              className="mt-4 text-ink-faint"
+              items={[
+                formatCount(pagination.total, "talk"),
+                teacherList.length ? formatCount(teacherList.length, "teacher") : null,
+                span.totalDuration ? formatDuration(Number(span.totalDuration)) : null,
+              ]}
+            />
+          </div>
         </div>
+        {retreat.description ? (
+          <p className="mt-6 max-w-[65ch] whitespace-pre-line text-pretty text-sm leading-relaxed text-ink-soft md:text-[0.9375rem]">
+            {retreat.description}
+          </p>
+        ) : null}
+        <button type="button" onClick={playFromStart} className={cn(buttonClass("primary"), "mt-7 pl-2 pr-5")}>
+          <span className="flex size-8 items-center justify-center rounded-full bg-accent text-on-accent">
+            <PlayGlyph playing={false} size={13} />
+          </span>
+          Play from the beginning
+        </button>
       </header>
 
       {teacherList.length > 1 ? (
-        <Section title="Teachers">
-          <div className="-mx-5 flex gap-4 overflow-x-auto px-5 pb-2 scrollbar-none sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
-            {teacherList.map((teacher) => (
-              <TeacherTile key={teacher.id} teacher={teacher} />
-            ))}
-          </div>
-        </Section>
+        <Shelf title="Teachers" label="Teachers on this retreat">
+          {teacherList.map((teacher) => (
+            <TeacherTile key={teacher.id} teacher={teacher} />
+          ))}
+        </Shelf>
       ) : null}
 
       <section className="py-6 md:py-8">
-        <div className="sticky top-14 z-20 -mx-5 mb-2 flex items-center justify-between gap-4 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:top-0 lg:-mx-12 lg:px-12">
-          <h2 className="font-serif text-2xl tracking-tight">Talks</h2>
+        <ListBar>
+          <h2 className="font-serif text-[1.5rem] leading-tight tracking-[-0.01em]">Talks</h2>
           <SortTabs
             current={sort}
             order={order}
@@ -203,7 +225,7 @@ export default function RetreatDetail() {
               { field: "teacher", label: "Teacher", defaultOrder: "asc" },
             ]}
           />
-        </div>
+        </ListBar>
         <TalkList talks={talkItems} showTeacher={teacherList.length !== 1} />
         <Pagination current={pagination.current} pages={pagination.pages} />
       </section>

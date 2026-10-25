@@ -2,7 +2,7 @@ import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { SearchX } from "lucide-react";
 import { formatCount } from "~/lib/format";
-import { CollectionCard } from "~/components/collection-cards";
+import { CenterRow } from "~/components/collection-cards";
 import { EmptyState, PageHeader, Pagination, SearchField, SortTabs } from "~/components/ui/primitives";
 import { eq, like, sql } from "drizzle-orm";
 import { db } from "~/db/client.server";
@@ -102,14 +102,14 @@ export default function Centers() {
   return (
     <div className="animate-rise">
       <PageHeader
-        eyebrow="Centers"
+        breadcrumbs={[{ label: "Listen", to: "/listen" }, { label: "Centers", to: "/centers" }]}
         title={q ? <>Centers matching “{q}”</> : "Where the talks were given"}
         description={`${formatCount(pagination.total, "meditation center")} and sanghas.`}
       >
         <SearchField placeholder="Find a center" defaultValue={q} className="max-w-xl" />
       </PageHeader>
 
-      <div className="sticky top-14 z-20 -mx-5 mb-4 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:top-0 lg:-mx-12 lg:px-12">
+      <div className="sticky top-[var(--bar-h)] z-20 -mx-5 mb-4 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
         <SortTabs
           current={params.get("sort") ?? "talks"}
           order={params.get("order") ?? "desc"}
@@ -122,17 +122,13 @@ export default function Centers() {
       </div>
 
       {items.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-x-10 sm:grid-cols-2">
           {items.map((center) => (
-            <CollectionCard
-              key={center.id}
-              to={`/centers/${center.slug}`}
-              title={center.name}
-              description={center.description}
-              meta={`${formatCount(Number(center.talksCount), "talk")} · ${formatCount(Number(center.teachersCount), "teacher")}`}
-            />
+            <li key={center.id} className="min-w-0 border-b border-line">
+              <CenterRow center={center} />
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <EmptyState icon={<SearchX size={20} />} title="No centers found">
           Try the town or the name of the sangha.

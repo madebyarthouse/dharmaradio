@@ -1,4 +1,4 @@
-import { Library } from "lucide-react";
+import { Check, Library } from "lucide-react";
 import { useLibrary } from "~/contexts/library-context";
 import { AuthPanel } from "~/components/auth-panel";
 
@@ -18,17 +18,24 @@ export function RequireAccount({
   if (library.user) return <>{children}</>;
 
   return (
-    <div className="mt-4 grid max-w-4xl gap-10 rounded-[2rem] border border-line bg-paper-raised p-6 shadow-soft md:grid-cols-2 md:p-10">
+    <div className="mt-4 grid gap-10 rounded-2xl bg-paper-raised ring-1 ring-inset ring-line p-6 shadow-soft md:grid-cols-2 md:p-10">
       <div>
         <span className="flex size-12 items-center justify-center rounded-full bg-accent-wash text-accent-ink">
           <Library size={22} />
         </span>
-        <h2 className="mt-5 text-balance font-serif text-3xl leading-tight tracking-tight">{title}</h2>
+        <h2 className="mt-5 text-balance font-serif text-[1.75rem] leading-tight tracking-[-0.01em]">{title}</h2>
         <p className="mt-3 text-pretty text-ink-soft">{description}</p>
-        <ul className="mt-6 space-y-2 text-sm text-ink-soft">
-          <li>· Resume any talk exactly where you paused</li>
-          <li>· Saved and liked talks, synced everywhere</li>
-          <li>· Playlists for your sits, walks and retreats at home</li>
+        <ul className="mt-6 space-y-2.5 text-sm text-ink-soft">
+          {[
+            "Resume any talk exactly where you paused",
+            "Saved and liked talks, synced everywhere",
+            "Your practice record on every device",
+          ].map((line) => (
+            <li key={line} className="flex items-start gap-2.5">
+              <Check size={16} className="mt-0.5 shrink-0 text-accent-ink" />
+              {line}
+            </li>
+          ))}
         </ul>
       </div>
       <AuthPanel />

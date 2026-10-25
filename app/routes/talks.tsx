@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
-import { useLoaderData, useSearchParams } from "react-router";
-import { eq, like, or } from "drizzle-orm";
+import { Link, useLoaderData, useSearchParams } from "react-router";
+import { and, eq, like, or } from "drizzle-orm";
 import { db } from "~/db/client.server";
 import { talks, teachers, centers, retreats } from "~/db/schema";
 import { totalCountField, withPagination } from "~/utils/pagination.server";
@@ -8,10 +8,12 @@ import { getRequestParams } from "~/utils/request-params";
 import { withOrdering } from "~/utils/with-ordering";
 import { cacheHeader } from "pretty-cache-header";
 import { withCachedJson } from "~/lib/cache.server";
+import { GUIDED_LENGTHS, type GuidedLengthKey } from "~/lib/guided";
+import { guidedLengthCondition, guidedTitleCondition } from "~/lib/guided.server";
 import { fromNestedRow } from "~/lib/talk";
 import { formatCount } from "~/lib/format";
 import { TalkList } from "~/components/talk-row";
-import { EmptyState, PageHeader, Pagination, SearchField, SortTabs } from "~/components/ui/primitives";
+import { EmptyState, FilterChip, PageHeader, Pagination, SearchField, SortTabs } from "~/components/ui/primitives";
 import { SearchX } from "lucide-react";
 
 const cacheHeaders = {
@@ -24,9 +26,10 @@ const cacheHeaders = {
 
 export const headers = () => cacheHeaders;
 
-export const meta: MetaFunction = () => {
+export const meta: MetaFunction = ({ location }) => {
+  const guided = new URLSearchParams(location.search).get("kind") === "guided";
   return [
-    { title: "Talks — Dharma Radio" },
+    { title: guided ? "Guided meditations, Dharma Radio" : "Talks, Dharma Radio" },
     {
       name: "description",
       content:
@@ -41,7 +44,10 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     order: "desc",
   });
 
-  return withCachedJson(
+  const params = new URL(request.url).searchParams;
+  const kind = params.get("kind") === "guided" ? "guided" : null;
+  const length = GUIDED_LENGTHS.find((item) => item.key === params.get("length"))?.key ?? null;
+  const result = await withCachedJson(
     context.cloudflare.env.DB_QUERY_CACHE,
     [
       "talks",
@@ -49,6 +55,8 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       `q=${searchQuery}`,
       `sort=${sort.field}`,
       `order=${sort.order}`,
+      `kind=${kind ?? "all"}`,
+      `length=${length ?? "all"}`,
     ].join(":"),
     900,
     async () => {
@@ -81,14 +89,16 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
         .leftJoin(teachers, eq(talks.teacherId, teachers.id))
         .leftJoin(centers, eq(talks.centerId, centers.id))
         .leftJoin(retreats, eq(talks.retreatId, retreats.id))
-        .where(
+        .where(and(
+          kind === "guided" ? guidedTitleCondition : undefined,
+          length ? guidedLengthCondition(length) : undefined,
           hasSearch
             ? or(
                 like(talks.title, `%${searchQuery}%`),
                 like(teachers.name, `%${searchQuery}%`)
               )
             : undefined
-        )
+        ))
         .orderBy(
           withOrdering({
             field: sort.field,
@@ -107,10 +117,58 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       });
     }
   );
+  return { ...result, kind, length };
+}
+
+/** The narrowing in the URL, shown as chips; each one removes itself. */
+function Filters({ kind, length }: { kind: string | null; length: GuidedLengthKey | null }) {
+  const [params] = useSearchParams();
+  const without = (...keys: string[]) => {
+    const next = new URLSearchParams(params);
+    for (const key of [...keys, "page"]) next.delete(key);
+    const qs = next.toString();
+    return qs ? `?${qs}` : "/talks";
+  };
+  const withLength = (key: GuidedLengthKey) => {
+    const next = new URLSearchParams(params);
+    next.set("kind", "guided");
+    next.set("length", key);
+    next.delete("page");
+    return `?${next}`;
+  };
+  return (
+    <div className="-mx-1 mt-5 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 scrollbar-none">
+      {kind ? (
+        <FilterChip to={without("kind", "length")} label="Remove the guided filter">
+          Guided
+        </FilterChip>
+      ) : null}
+      {kind ? <span aria-hidden className="mx-1.5 h-5 w-px shrink-0 bg-line-strong" /> : null}
+      <nav aria-label="Length" className="flex shrink-0 gap-1">
+        {GUIDED_LENGTHS.map((item) => {
+          const label = item.key === "60" ? "An hour or more" : `About ${item.key} min`;
+          return item.key === length ? (
+            <FilterChip key={item.key} to={without("length")} label={`Remove the length filter, ${label}`}>
+              {label}
+            </FilterChip>
+          ) : (
+            <Link
+              key={item.key}
+              to={withLength(item.key)}
+              preventScrollReset
+              className="press inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3 text-[0.8125rem] tabular-nums text-ink-soft hover:bg-paper-sunken hover:text-ink"
+            >
+              {item.key === "60" ? "An hour or more" : `${item.key} min`}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
+  );
 }
 
 export default function Talks() {
-  const { items, pagination } = useLoaderData<typeof loader>();
+  const { items, pagination, kind, length } = useLoaderData<typeof loader>();
   const [params] = useSearchParams();
   const q = params.get("q") ?? "";
   const sort = params.get("sort") ?? "date";
@@ -120,18 +178,25 @@ export default function Talks() {
   return (
     <div className="animate-rise">
       <PageHeader
-        eyebrow="Library of talks"
-        title={q ? <>Results for “{q}”</> : "Talks"}
+        breadcrumbs={[{ label: "Listen", to: "/listen" }, { label: kind === "guided" ? "Guided meditations" : "Talks", to: kind === "guided" ? "/talks?kind=guided" : "/talks" }]}
+        title={q ? <>Results for “{q}”</> : kind === "guided" ? "Guided meditations" : "Talks"}
         description={
           q
-            ? `${formatCount(pagination.total, "talk")} by title or teacher`
-            : `${formatCount(pagination.total, "recording")}, newest first.`
+            ? `${formatCount(pagination.total, kind ? "guided meditation" : "talk")} by title or teacher.`
+            : kind === "guided"
+              ? `${formatCount(pagination.total, "recording")} with “guided” in the title, newest first.`
+              : `${formatCount(pagination.total, "recording")}, newest first.`
         }
       >
-        <SearchField placeholder="Search by title or teacher" defaultValue={q} className="max-w-xl" />
+        <SearchField
+          placeholder={kind ? "Search guided meditations" : "Search by title or teacher"}
+          defaultValue={q}
+          className="max-w-xl"
+        />
+        {kind || length ? <Filters kind={kind} length={length} /> : null}
       </PageHeader>
 
-      <div className="sticky top-14 z-20 -mx-5 mb-2 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:top-0 lg:-mx-12 lg:px-12">
+      <div className="sticky top-[var(--bar-h)] z-20 -mx-5 mb-2 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
         <SortTabs
           current={sort}
           order={order}

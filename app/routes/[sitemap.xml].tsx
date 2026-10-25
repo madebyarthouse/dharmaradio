@@ -33,6 +33,8 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
       const routes = [
         { url: "", priority: "1.0", changefreq: "daily" },
+        { url: "sit", priority: "0.9", changefreq: "monthly" },
+        { url: "listen", priority: "0.9", changefreq: "daily" },
         { url: "talks", priority: "0.9", changefreq: "daily" },
         { url: "teachers", priority: "0.8", changefreq: "weekly" },
         { url: "centers", priority: "0.8", changefreq: "weekly" },

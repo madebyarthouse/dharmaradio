@@ -62,7 +62,7 @@ export function AuthPanel({ onDone }: { onDone?: () => void }) {
         >
           <ArrowLeft size={16} /> Back
         </button>
-        <h2 className="font-serif text-2xl tracking-tight">Check your inbox</h2>
+        <h2 className="font-serif text-[1.5rem] leading-tight tracking-[-0.01em]">Check your inbox</h2>
         <p className="mt-2 text-sm text-ink-soft">
           We sent a 6-digit code to <span className="text-ink">{step.email}</span>.
         </p>
@@ -77,7 +77,7 @@ export function AuthPanel({ onDone }: { onDone?: () => void }) {
             required
             placeholder="000000"
             aria-label="6-digit code"
-            className="h-14 w-full rounded-2xl border border-line-strong bg-paper-raised text-center font-serif text-3xl tracking-[0.4em] tabular-nums outline-none placeholder:text-ink-faint/40 focus:shadow-[0_0_0_4px_var(--accent-wash)]"
+            className="h-14 w-full rounded-xl border border-line-strong bg-paper-raised text-center font-serif text-[1.875rem] tracking-[0.4em] tabular-nums outline-none placeholder:text-ink-faint/40 focus:shadow-[0_0_0_4px_var(--accent-wash)]"
             onChange={(e) => {
               if (e.currentTarget.value.replace(/\s/g, "").length === 6) e.currentTarget.form?.requestSubmit();
             }}

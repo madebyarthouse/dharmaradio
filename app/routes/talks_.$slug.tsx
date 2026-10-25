@@ -1,16 +1,29 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, Link } from "react-router";
 import { and, desc, eq, ne, sql } from "drizzle-orm";
-import { ListPlus, Share } from "lucide-react";
+import { ListPlus, MapPin, Share } from "lucide-react";
 import { db } from "~/db/client.server";
 import { talks, teachers, retreats, centers } from "~/db/schema";
 import { useAudio } from "~/contexts/audio-context";
 import { useLibrary } from "~/contexts/library-context";
 import { useUI } from "~/contexts/ui-context";
 import { fromNestedRow, toPlayerTalk, type TalkListItem } from "~/lib/talk";
-import { formatCount, formatDate, formatDuration, formatRemaining } from "~/lib/format";
+import {
+  formatCount,
+  formatDate,
+  formatDuration,
+  formatRemaining,
+} from "~/lib/format";
 import { LikeButton, SaveButton, TalkList } from "~/components/talk-row";
-import { Avatar, Section, SectionLink, buttonClass } from "~/components/ui/primitives";
+import {
+  Breadcrumbs,
+  MetaList,
+  Section,
+  SectionLink,
+  buttonClass,
+  titleClass,
+} from "~/components/ui/primitives";
+import { TalkArt } from "~/components/artwork";
 import { PlayGlyph } from "~/components/play-glyph";
 import { cn } from "~/lib/cn";
 import { cacheHeader } from "pretty-cache-header";
@@ -33,7 +46,7 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
 
   const { talk } = data;
   const teacherName = talk.teacher?.name;
-  const title = `${talk.title}${teacherName ? ` — ${teacherName}` : ""} | Dharma Radio`;
+  const title = `${talk.title}${teacherName ? `, ${teacherName}` : ""} | Dharma Radio`;
 
   return [
     { title },
@@ -80,7 +93,9 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
           slug: teachers.slug,
           description: teachers.description,
           profileImageUrl: teachers.profileImageUrl,
-          talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
+          talksCount: sql<number>`count(distinct ${talks.id})`.as(
+            "talks_count",
+          ),
           retreatsCount:
             sql<number>`count(distinct case when ${talks.retreatId} is not null then ${talks.retreatId} end)`.as(
               "retreats_count",
@@ -102,7 +117,9 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
           title: retreats.title,
           slug: retreats.slug,
           description: retreats.description,
-          talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
+          talksCount: sql<number>`count(distinct ${talks.id})`.as(
+            "talks_count",
+          ),
           teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
             "teachers_count",
           ),
@@ -119,7 +136,9 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
           name: centers.name,
           slug: centers.slug,
           description: centers.description,
-          talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
+          talksCount: sql<number>`count(distinct ${talks.id})`.as(
+            "talks_count",
+          ),
           teachersCount: sql<number>`count(distinct ${talks.teacherId})`.as(
             "teachers_count",
           ),
@@ -198,10 +217,18 @@ export default function TalkDetail() {
     audioUrl: talk.audioUrl,
     publicationDate: talk.publicationDate,
     teacher: talk.teacher
-      ? { name: talk.teacher.name, slug: talk.teacher.slug, profileImageUrl: talk.teacher.profileImageUrl }
+      ? {
+          name: talk.teacher.name,
+          slug: talk.teacher.slug,
+          profileImageUrl: talk.teacher.profileImageUrl,
+        }
       : null,
-    center: talk.center ? { name: talk.center.name, slug: talk.center.slug } : null,
-    retreat: talk.retreat ? { title: talk.retreat.title, slug: talk.retreat.slug } : null,
+    center: talk.center
+      ? { name: talk.center.name, slug: talk.center.slug }
+      : null,
+    retreat: talk.retreat
+      ? { title: talk.retreat.title, slug: talk.retreat.slug }
+      : null,
   };
   const retreatTalks = fromRetreat.map(fromNestedRow);
   const teacherTalks = fromTeacher.map(fromNestedRow);
@@ -209,7 +236,8 @@ export default function TalkDetail() {
   const isCurrent = audio.currentTalk?.id === talk.id;
   const playing = isCurrent && audio.isPlaying;
   const progress = library.progress.get(talk.id);
-  const resumable = progress && !progress.completed && progress.positionSec > 30;
+  const resumable =
+    progress && !progress.completed && progress.positionSec > 30;
 
   const play = () => {
     if (isCurrent) return audio.togglePlay();
@@ -220,7 +248,8 @@ export default function TalkDetail() {
 
   const share = async () => {
     const url = window.location.href;
-    if (navigator.share) await navigator.share({ title: talk.title, url }).catch(() => {});
+    if (navigator.share)
+      await navigator.share({ title: talk.title, url }).catch(() => {});
     else {
       await navigator.clipboard.writeText(url);
       ui.toast("Link copied");
@@ -235,88 +264,126 @@ export default function TalkDetail() {
     datePublished: new Date(talk.publicationDate).toISOString(),
     timeRequired: `PT${Math.round(talk.duration / 60)}M`,
     associatedMedia: { "@type": "MediaObject", contentUrl: talk.audioUrl },
-    author: talk.teacher ? { "@type": "Person", name: talk.teacher.name } : undefined,
+    author: talk.teacher
+      ? { "@type": "Person", name: talk.teacher.name }
+      : undefined,
   };
 
   return (
     <article className="animate-rise">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <header className="relative -mx-5 overflow-hidden px-5 pb-8 pt-8 sm:-mx-8 sm:px-8 md:pt-14 lg:-mx-12 lg:px-12">
-        <div aria-hidden className="dusk-glow absolute inset-0" />
-        <div className="relative">
-          <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-x-2 text-sm text-ink-faint">
-            <Link to="/talks" className="hover:text-ink">Talks</Link>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <header className="relative pb-8 pt-7 md:pt-12">
+        <Breadcrumbs
+          items={[
+            { label: "Listen", to: "/listen" },
+            { label: "Talks", to: "/talks" },
+            { label: talk.title, to: `/talks/${talk.slug}` },
+          ]}
+        />
+        <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
+          <TalkArt
+            src={talk.teacher?.profileImageUrl}
+            seed={talk.teacher?.slug ?? talk.id}
+            name={talk.teacher?.name ?? talk.title}
+            className="w-40 shadow-soft [--art-radius:0.75rem] md:w-60"
+          />
+          <div className="min-w-0 flex-1">
             {talk.retreat ? (
-              <>
-                <span aria-hidden>/</span>
-                <Link to={`/retreats/${talk.retreat.slug}`} className="line-clamp-1 italic hover:text-ink">
-                  {talk.retreat.title}
-                </Link>
-              </>
+              <Link
+                to={`/retreats/${talk.retreat.slug}`}
+                className="mb-3 block truncate text-[0.8125rem] text-ink-soft hover:text-ink"
+              >
+                {talk.retreat.title}
+              </Link>
             ) : null}
-          </nav>
+            <h1 className={cn(titleClass, "max-w-3xl")}>{talk.title}</h1>
 
-          <h1 className="max-w-3xl text-balance font-serif text-4xl leading-[1.05] tracking-tight md:text-6xl">
-            {talk.title}
-          </h1>
-
-          {talk.teacher ? (
-            <Link to={`/teachers/${talk.teacher.slug}`} className="group mt-6 inline-flex items-center gap-3">
-              <Avatar src={talk.teacher.profileImageUrl} name={talk.teacher.name} size={44} />
-              <span>
-                <span className="block font-medium group-hover:underline decoration-line-strong underline-offset-4">
-                  {talk.teacher.name}
+            {talk.teacher ? (
+              <Link
+                to={`/teachers/${talk.teacher.slug}`}
+                className="group mt-5 inline-flex items-center gap-3"
+              >
+                {/* No portrait here: the artwork beside the title already shows the teacher. */}
+                <span>
+                  <span className="block font-serif text-[1.0625rem] decoration-line-strong underline-offset-4 group-hover:underline">
+                    {talk.teacher.name}
+                  </span>
+                  <span className="block text-xs tabular-nums text-ink-faint">
+                    {formatDate(talk.publicationDate)}
+                    {talk.center ? `, ${talk.center.name}` : ""}
+                  </span>
                 </span>
-                <span className="block text-sm text-ink-faint">
-                  {formatDate(talk.publicationDate)}
-                  {talk.center ? ` · ${talk.center.name}` : ""}
-                </span>
-              </span>
-            </Link>
-          ) : null}
+              </Link>
+            ) : null}
 
-          <div className="mt-8 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={play}
-              className={cn(buttonClass("primary"), "h-14 gap-3 pl-2 pr-6 text-base")}
-            >
-              <span className="flex size-10 items-center justify-center rounded-full bg-accent text-on-accent">
-                <PlayGlyph playing={playing} size={16} />
-              </span>
-              {playing
-                ? "Pause"
-                : isCurrent
-                  ? "Resume"
-                  : resumable
-                    ? `Resume · ${formatRemaining(progress.positionSec, talk.duration)}`
-                    : `Play · ${formatDuration(talk.duration)}`}
-            </button>
-            <SaveButton talkId={talk.id} className="size-12 border border-line" />
-            <LikeButton talkId={talk.id} className="size-12 border border-line" />
-            <button
-              type="button"
-              onClick={() => (library.user ? ui.openAddToPlaylist(item) : library.requestSignIn())}
-              aria-label="Add to playlist"
-              className="inline-flex size-12 items-center justify-center rounded-full border border-line text-ink-faint hover:bg-paper-sunken hover:text-ink"
-            >
-              <ListPlus size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => void share()}
-              aria-label="Share"
-              className="inline-flex size-12 items-center justify-center rounded-full border border-line text-ink-faint hover:bg-paper-sunken hover:text-ink"
-            >
-              <Share size={18} />
-            </button>
+            <div className="mt-7 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={play}
+                className={cn(
+                  buttonClass("primary"),
+                  "h-14 w-full gap-3 pl-2 pr-6 text-[0.875rem] sm:w-auto",
+                )}
+              >
+                <span className="flex size-10 items-center justify-center rounded-full bg-accent text-on-accent">
+                  <PlayGlyph playing={playing} size={16} />
+                </span>
+                {playing ? (
+                  "Pause"
+                ) : isCurrent ? (
+                  "Resume"
+                ) : resumable ? (
+                  `Resume, ${formatRemaining(progress.positionSec, talk.duration).toLowerCase()}`
+                ) : (
+                  <>
+                    Play{" "}
+                    <span className="ml-1 font-normal tabular-nums opacity-70">
+                      {formatDuration(talk.duration)}
+                    </span>
+                  </>
+                )}
+              </button>
+              <SaveButton
+                talkId={talk.id}
+                className="size-12 ring-1 ring-inset ring-line"
+              />
+              <LikeButton
+                talkId={talk.id}
+                className="size-12 ring-1 ring-inset ring-line"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  library.user
+                    ? ui.openAddToPlaylist(item)
+                    : library.requestSignIn()
+                }
+                aria-label="Add to playlist"
+                className="press inline-flex size-12 items-center justify-center rounded-full text-ink-faint ring-1 ring-inset ring-line hover:bg-paper-sunken hover:text-ink"
+              >
+                <ListPlus size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => void share()}
+                aria-label="Share"
+                className="press inline-flex size-12 items-center justify-center rounded-full text-ink-faint ring-1 ring-inset ring-line hover:bg-paper-sunken hover:text-ink"
+              >
+                <Share size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       {talk.description ? (
-        <section className="max-w-2xl border-t border-line py-8">
-          <p className="whitespace-pre-line text-pretty font-serif text-lg leading-relaxed text-ink-soft md:text-xl">
+        <section className="border-t border-line py-8">
+          <p className="max-w-[65ch] whitespace-pre-line text-pretty text-sm leading-[1.75] text-ink-soft md:text-[0.9375rem]">
             {talk.description}
           </p>
         </section>
@@ -324,8 +391,12 @@ export default function TalkDetail() {
 
       {talk.retreat && retreatTalks.length ? (
         <Section
-          title={<>From <em>{talk.retreat.title}</em></>}
-          action={<SectionLink to={`/retreats/${talk.retreat.slug}`}>{formatCount(Number(talk.retreat.talksCount), "talk")}</SectionLink>}
+          title={`From ${talk.retreat.title}`}
+          action={
+            <SectionLink to={`/retreats/${talk.retreat.slug}`}>
+              {formatCount(Number(talk.retreat.talksCount), "talk")}
+            </SectionLink>
+          }
         >
           <TalkList talks={retreatTalks} />
         </Section>
@@ -334,7 +405,11 @@ export default function TalkDetail() {
       {talk.teacher && teacherTalks.length ? (
         <Section
           title={`More from ${talk.teacher.name}`}
-          action={<SectionLink to={`/teachers/${talk.teacher.slug}`}>{formatCount(Number(talk.teacher.talksCount), "talk")}</SectionLink>}
+          action={
+            <SectionLink to={`/teachers/${talk.teacher.slug}`}>
+              {formatCount(Number(talk.teacher.talksCount), "talk")}
+            </SectionLink>
+          }
         >
           <TalkList talks={teacherTalks} showTeacher={false} />
         </Section>
@@ -342,13 +417,21 @@ export default function TalkDetail() {
 
       {talk.center ? (
         <section className="border-t border-line py-8">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-ink-faint">Recorded at</p>
-          <Link to={`/centers/${talk.center.slug}`} className="mt-2 inline-block font-serif text-2xl hover:underline decoration-line-strong underline-offset-4">
+          <p className="text-xs text-ink-faint">Recorded at</p>
+          <Link
+            to={`/centers/${talk.center.slug}`}
+            className="mt-2 inline-flex items-center gap-2 font-serif text-[1.5rem] decoration-line-strong underline-offset-4 hover:underline"
+          >
+            <MapPin size={18} className="text-ink-faint" aria-hidden />
             {talk.center.name}
           </Link>
-          <p className="mt-1 text-sm text-ink-faint">
-            {formatCount(Number(talk.center.talksCount), "talk")} · {formatCount(Number(talk.center.teachersCount), "teacher")}
-          </p>
+          <MetaList
+            className="mt-1 text-ink-faint"
+            items={[
+              formatCount(Number(talk.center.talksCount), "talk"),
+              formatCount(Number(talk.center.teachersCount), "teacher"),
+            ]}
+          />
         </section>
       ) : null}
     </article>

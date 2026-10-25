@@ -7,10 +7,24 @@ const PRECACHE = `${PREFIX}assets-${VERSION}`;
 const PAGES = `${PREFIX}pages-${VERSION}`;
 const IMAGES = `${PREFIX}images-${VERSION}`;
 const OFFLINE = "/pwa-offline.html";
+/** The timer and the practice record must open offline; "/sit" is the timer itself. */
+const TIMER = "/sit";
+const SHELLS = ["/", TIMER, "/practice"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(PRECACHE).then((cache) => cache.addAll(PRECACHE_URLS)),
+    (async () => {
+      await (await caches.open(PRECACHE)).addAll(PRECACHE_URLS);
+      // Best effort: the timer works offline even if it was never opened online.
+      try {
+        const request = new Request(new URL(TIMER, self.location.origin).href);
+        const response = await fetch(request);
+        if (publicResponse(response))
+          await (await caches.open(PAGES)).put(request, response);
+      } catch {
+        /* Offline during install; the shell is cached on first visit instead. */
+      }
+    })(),
   );
   // Wait for the UI's update confirmation before replacing an active worker.
 });
@@ -42,6 +56,9 @@ async function putLimited(cacheName, request, response, limit) {
   const keys = await cache.keys();
   await Promise.all(
     keys
+      // Preserve the last successful timer/practice shell even after browsing
+      // enough archive pages to evict older navigation entries.
+      .filter((key) => cacheName !== PAGES || !SHELLS.includes(new URL(key.url).pathname))
       .slice(0, Math.max(0, keys.length - limit))
       .map((key) => cache.delete(key)),
   );
@@ -60,6 +77,7 @@ self.addEventListener("fetch", (event) => {
   if (
     request.method !== "GET" ||
     /^\/api(?:\/|$)/i.test(url.pathname) ||
+    /^\/audio\//i.test(url.pathname) ||
     request.destination === "audio" ||
     request.destination === "video" ||
     request.headers.has("Range") ||
@@ -73,17 +91,23 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(PAGES);
+        // Timer shells use a canonical pathname cache key: query strings must not
+        // prevent an installed app from reopening its last successful shell offline.
+        const sitShell = SHELLS.includes(url.pathname);
+        const pageKey = sitShell ? new Request(new URL(url.pathname, url.origin)) : request;
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
         try {
           const response = await fetch(request, { signal: controller.signal });
           if (response.status >= 500) throw new Error("Navigation unavailable");
           if (publicResponse(response))
-            event.waitUntil(putLimited(PAGES, request, response.clone(), 30));
+            event.waitUntil(putLimited(PAGES, pageKey, response.clone(), 30));
           return response;
         } catch {
           const cached =
-            (await cache.match(request)) ||
+            (await cache.match(pageKey)) ||
+            (sitShell && (await cache.match(new URL(TIMER, url.origin).href))) ||
+            (sitShell && (await cache.match(new URL("/", url.origin).href))) ||
             (await (await caches.open(PRECACHE)).match(OFFLINE));
           // Cloudflare redirects .html assets to clean URLs. A synthesized response
           // clears the cached redirect flag so offline navigations can consume it.

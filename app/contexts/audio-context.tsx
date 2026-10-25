@@ -5,9 +5,13 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useSyncExternalStore,
 } from "react";
 import { usePostHog } from "posthog-js/react";
 import { trackPlausibleEvent } from "~/utils/plausible";
+import { usePractice } from "~/contexts/practice-context";
+import { isGuidedTitle } from "~/lib/guided";
+import { timerOwnsMedia, subscribeTimerMedia } from "~/lib/timer-media";
 import { useLibrary } from "~/contexts/library-context";
 
 export type PlayerTalk = {
@@ -53,6 +57,11 @@ export type AudioContextType = {
   clearQueue(): void;
   sleepTimer: SleepTimer;
   setSleepTimer(value: { minutes: number } | { endOfTalk: true } | null): void;
+  /**
+   * The playing element, for observing only (the visualizer mirrors its time).
+   * Never route it into Web Audio: that is irreversible and can stop background playback on iOS.
+   */
+  getMediaElement(): HTMLAudioElement | null;
   /** @deprecated Use playNow(talk, context) and queue. */
   playlist: PlayerTalk[];
   /** @deprecated Sets playback context, preserving an already active queue. */
@@ -85,6 +94,11 @@ function isIosDevice() {
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const posthog = usePostHog();
   const library = useLibrary();
+  const practice = usePractice();
+  const practiceRef = useRef(practice);
+  practiceRef.current = practice;
+  const timerMedia = useSyncExternalStore(subscribeTimerMedia, timerOwnsMedia, () => false);
+  const guidedPlayback = useRef({ startedAt: 0, logged: false });
   const libraryRef = useRef(library);
   libraryRef.current = library;
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -156,6 +170,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           : talk.duration || null,
       completed: completed || audio.ended,
     });
+    if ((completed || audio.ended) && !guidedPlayback.current.logged && isGuidedTitle(talk.title)) {
+      const durationSec = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : talk.duration;
+      if (durationSec >= 60) {
+        guidedPlayback.current.logged = true;
+        practiceRef.current.log({ kind: "guided", talkId: talk.id, talkTitle: talk.title,
+          durationSec: Math.floor(durationSec), startedAt: guidedPlayback.current.startedAt || Date.now() - durationSec * 1000 });
+      }
+    }
     // Pauses, seeks while paused and completions should reach the server now, not on the next throttle tick.
     if (completed || audio.paused)
       window.dispatchEvent(new Event("dharmaradio:flush-progress"));
@@ -187,6 +209,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const audio = audioRef.current;
     if (!audio || !state.current.talk) return;
     cancelFade();
+    if (audio.ended || !guidedPlayback.current.startedAt)
+      guidedPlayback.current = { startedAt: Date.now(), logged: false };
     const request = ++playRequest.current;
     setIsBuffering(true);
     // Invoke synchronously in the user gesture, including on iOS.
@@ -226,6 +250,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         cancelFade();
         ++playRequest.current;
         audio.pause();
+        guidedPlayback.current = { startedAt: 0, logged: false };
         state.current.talk = talk;
         setCurrentTalk(talk);
         const saved = libraryRef.current?.progress.get(talk.id);
@@ -600,7 +625,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, [pauseTalk, setSleepTimer, cancelFade]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator)) return;
+    if (timerMedia || !("mediaSession" in navigator)) return;
     const session = navigator.mediaSession;
     if (currentTalk && typeof MediaMetadata !== "undefined")
       session.metadata = new MediaMetadata({
@@ -643,6 +668,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     }
     return () => {
+      if (timerOwnsMedia()) return;
       for (const action of Object.keys(handlers)) {
         try {
           session.setActionHandler(action as MediaSessionAction, null);
@@ -652,6 +678,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [
+    timerMedia,
     currentTalk,
     isPlaying,
     startPlayback,
@@ -663,7 +690,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   ]);
   useEffect(() => {
     if (
-      !("mediaSession" in navigator) ||
+      timerMedia || !("mediaSession" in navigator) ||
       !navigator.mediaSession.setPositionState
     )
       return;
@@ -677,8 +704,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* Safari may reject position before metadata is ready. */
     }
-  }, [currentTime, duration, playbackRate]);
+  }, [currentTime, duration, playbackRate, timerMedia]);
 
+  const getMediaElement = useCallback(() => audioRef.current, []);
   const togglePlay = useCallback(() => {
     if (audioRef.current?.paused) startPlayback();
     else pauseTalk();
@@ -719,6 +747,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setPlaylist,
         sleepTimer,
         setSleepTimer,
+        getMediaElement,
       }}
     >
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}

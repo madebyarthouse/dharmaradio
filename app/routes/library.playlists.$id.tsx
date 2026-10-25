@@ -2,7 +2,7 @@ import type { MetaFunction } from "react-router";
 import { Link, useNavigate, useParams } from "react-router";
 import { useCallback, useEffect, useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ArrowDown, ArrowLeft, ArrowUp, ListMusic, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ListMusic, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 import { useAudio } from "~/contexts/audio-context";
 import { useLibrary, type LibraryTalk, type PlaylistSummary } from "~/contexts/library-context";
 import { useUI } from "~/contexts/ui-context";
@@ -11,11 +11,11 @@ import { formatCount, formatDuration } from "~/lib/format";
 import { noindex, shellHeaders } from "~/lib/shell-route";
 import { TalkRow, menuContentClass, menuItemClass } from "~/components/talk-row";
 import { ListSkeleton, RequireAccount } from "~/components/library-ui";
-import { Button, EmptyState, buttonClass } from "~/components/ui/primitives";
+import { Breadcrumbs, Button, EmptyState, MetaList, buttonClass, titleClass } from "~/components/ui/primitives";
 import { PlayGlyph } from "~/components/play-glyph";
 import { cn } from "~/lib/cn";
 
-export const meta: MetaFunction = () => [{ title: "Playlist — Dharma Radio" }, noindex];
+export const meta: MetaFunction = () => [{ title: "Playlist, Dharma Radio" }, noindex];
 export const headers = shellHeaders;
 
 type Data = { playlist: PlaylistSummary; talks: LibraryTalk[] };
@@ -23,16 +23,29 @@ type Data = { playlist: PlaylistSummary; talks: LibraryTalk[] };
 export default function PlaylistPage() {
   return (
     <div className="animate-rise">
-      <Link
-        to="/library"
-        className="-ml-2 mt-6 inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-sm text-ink-soft hover:text-ink"
-      >
-        <ArrowLeft size={16} /> Library
-      </Link>
+      <div className="pt-7 md:pt-12">
+        <PlaylistCrumbs />
+      </div>
       <RequireAccount>
         <Playlist />
       </RequireAccount>
     </div>
+  );
+}
+
+/** Practice, then this playlist; its name is known on the client once the library loads. */
+function PlaylistCrumbs() {
+  const { id = "" } = useParams();
+  const library = useLibrary();
+  const name = library.playlists.find((p) => p.id === id)?.name ?? "Playlist";
+  return (
+    <Breadcrumbs
+      structuredData={false}
+      items={[
+        { label: "Practice", to: "/practice" },
+        { label: name, to: `/library/playlists/${id}` },
+      ]}
+    />
   );
 }
 
@@ -66,7 +79,7 @@ function Playlist() {
 
   if (failed) {
     return (
-      <EmptyState title="Playlist not found" action={<Link to="/library" className={buttonClass("primary")}>Back to library</Link>}>
+      <EmptyState title="Playlist not found" action={<Link to="/practice" className={buttonClass("primary")}>Back to your practice</Link>}>
         It may have been deleted on another device.
       </EmptyState>
     );
@@ -107,7 +120,7 @@ function Playlist() {
     if (!window.confirm(`Delete “${playlist.name}”? The talks stay in the archive.`)) return;
     await library.deletePlaylist(playlist.id);
     ui.toast("Playlist deleted");
-    navigate("/library");
+    navigate("/practice");
   };
 
   const total = talks.reduce((sum, t) => sum + t.duration, 0);
@@ -115,11 +128,10 @@ function Playlist() {
   return (
     <>
       <header className="flex flex-col gap-6 pb-6 pt-4 md:flex-row md:items-end">
-        <span className="flex size-32 shrink-0 items-center justify-center rounded-[2rem] bg-accent-wash text-accent-ink shadow-soft md:size-40">
+        <span className="flex size-32 shrink-0 items-center justify-center rounded-xl bg-paper-sunken text-accent-ink shadow-soft ring-1 ring-inset ring-line md:size-40">
           <ListMusic size={48} strokeWidth={1.25} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-accent-ink">Playlist</p>
           {renaming ? (
             <form onSubmit={rename} className="mt-2 flex gap-2">
               <input
@@ -129,19 +141,16 @@ function Playlist() {
                 aria-label="Playlist name"
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
-                className="h-14 min-w-0 flex-1 rounded-2xl border border-line-strong bg-paper-raised px-4 font-serif text-3xl outline-none"
+                className="h-14 min-w-0 flex-1 rounded-xl bg-paper-raised px-4 font-serif text-[1.75rem] outline-none ring-1 ring-inset ring-line-strong"
               />
               <Button type="submit">Save</Button>
             </form>
           ) : (
-            <h1 className="mt-2 text-balance font-serif text-4xl leading-tight tracking-tight md:text-6xl">
+            <h1 className={cn(titleClass, "mt-2")}>
               {playlist.name}
             </h1>
           )}
-          <p className="mt-2 text-sm text-ink-soft">
-            {formatCount(talks.length, "talk")}
-            {total ? ` · ${formatDuration(total)}` : ""}
-          </p>
+          <MetaList className="mt-3" items={[formatCount(talks.length, "talk"), total ? formatDuration(total) : null]} />
         </div>
       </header>
 
@@ -160,7 +169,7 @@ function Playlist() {
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger
             aria-label="Playlist options"
-            className="inline-flex size-11 items-center justify-center rounded-full border border-line text-ink-soft hover:bg-paper-sunken"
+            className="press inline-flex size-11 items-center justify-center rounded-full text-ink-soft ring-1 ring-inset ring-line hover:bg-paper-sunken"
           >
             <MoreHorizontal size={18} />
           </DropdownMenu.Trigger>

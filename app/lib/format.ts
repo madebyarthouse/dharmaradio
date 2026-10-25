@@ -40,3 +40,47 @@ export function formatCount(n: number, singular: string, plural = `${singular}s`
   const value = Number(n) || 0;
   return `${value.toLocaleString("en-US")} ${value === 1 ? singular : plural}`;
 }
+
+const ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+const TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+
+/** 20 -> "twenty", 45 -> "forty-five". Numbers past 99 stay as figures. */
+export function numberInWords(n: number) {
+  const value = Math.round(n);
+  if (value < 0 || value > 99) return value.toLocaleString("en-US");
+  if (value < 20) return ONES[value];
+  const rest = value % 10;
+  return rest ? `${TENS[Math.floor(value / 10)]}-${ONES[rest]}` : TENS[value / 10];
+}
+
+/** Minutes as a phrase: "twenty minutes", "one minute", "an hour and a half". */
+export function minutesInWords(minutes: number) {
+  const m = Math.round(minutes);
+  if (m === 60) return "an hour";
+  if (m === 90) return "an hour and a half";
+  return `${numberInWords(m)} ${m === 1 ? "minute" : "minutes"}`;
+}
+
+const monthFormatter = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" });
+
+/** The parts a calendar-like date block needs, in UTC like every other date here. */
+export function dateParts(input: Date | string | number | null | undefined) {
+  if (input == null) return null;
+  const date = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(date.getTime())) return null;
+  return { day: date.getUTCDate(), month: monthFormatter.format(date), year: date.getUTCFullYear() };
+}
+
+/** "Mar 14 to 21, 2025", "Mar 30 to Apr 4, 2025", "Dec 28, 2024 to Jan 3, 2025". */
+export function formatDateRange(
+  from: Date | string | number | null | undefined,
+  to: Date | string | number | null | undefined,
+) {
+  const a = dateParts(from);
+  const b = dateParts(to);
+  if (!a) return b ? formatDate(to) : "";
+  if (!b || (a.day === b.day && a.month === b.month && a.year === b.year)) return formatDate(from);
+  if (a.year !== b.year) return `${formatDate(from)} to ${formatDate(to)}`;
+  if (a.month !== b.month) return `${a.month} ${a.day} to ${b.month} ${b.day}, ${b.year}`;
+  return `${a.month} ${a.day} to ${b.day}, ${b.year}`;
+}

@@ -24,10 +24,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     start_url: "/",
     categories: ["education", "lifestyle"],
     shortcuts: [
+      { name: "Sit", url: "/sit", description: "Start the meditation timer" },
+      { name: "Listen", url: "/listen", description: "Dharma talks and guided meditations" },
       {
-        name: "Library",
-        url: "/library",
-        description: "Your saved talks and listening progress",
+        name: "Practice",
+        url: "/practice",
+        description: "Your sits, saved talks and listening progress",
       },
       { name: "Talks", url: "/talks", description: "Browse meditation talks" },
     ],

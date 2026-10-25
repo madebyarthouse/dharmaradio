@@ -13,11 +13,11 @@ import {
   talks,
   teachers,
 } from "~/db/schema";
+import { handlePractice } from "~/lib/practice.server";
 import { createAuth } from "~/lib/auth.server";
 
-export const privateHeaders = { "Cache-Control": "private, no-store" };
-export const privateJson = (body: unknown, status = 200) =>
-  Response.json(body, { status, headers: privateHeaders });
+import { privateJson } from "~/lib/private-response.server";
+export { privateHeaders, privateJson } from "~/lib/private-response.server";
 const idSchema = z.coerce
   .number()
   .int()
@@ -110,10 +110,10 @@ async function body(request: Request) {
   }
 }
 
-export async function handleLibrary({
-  request,
-  context,
-}: LoaderFunctionArgs): Promise<Response> {
+export async function handleLibrary(args: LoaderFunctionArgs): Promise<Response> {
+  const { request, context } = args;
+  if (/^\/api\/me\/practice(?:\/|$)/.test(new URL(request.url).pathname))
+    return handlePractice(args);
   try {
     const env = context.cloudflare.env;
     const session = await createAuth(env).api.getSession({

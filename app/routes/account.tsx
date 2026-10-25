@@ -10,13 +10,13 @@ import { RequireAccount } from "~/components/library-ui";
 import { Avatar, Button, PageHeader } from "~/components/ui/primitives";
 import { cn } from "~/lib/cn";
 
-export const meta: MetaFunction = () => [{ title: "Account — Dharma Radio" }, noindex];
+export const meta: MetaFunction = () => [{ title: "Account, Dharma Radio" }, noindex];
 export const headers = shellHeaders;
 
 export default function Account() {
   return (
     <div className="animate-rise">
-      <PageHeader eyebrow="Account" title="Settings" />
+      <PageHeader title="Account" />
       <div className="grid max-w-2xl gap-4">
         <RequireAccount title="Sign in to sync" description="Your account keeps saved talks, playlists and listening progress in step across devices.">
           <Profile />
@@ -30,8 +30,8 @@ export default function Account() {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl border border-line bg-paper-raised p-5 md:p-6">
-      <h2 className="mb-4 text-xs font-medium uppercase tracking-[0.16em] text-ink-faint">{title}</h2>
+    <section className="rounded-2xl bg-paper-raised ring-1 ring-inset ring-line p-5 md:p-6">
+      <h2 className="mb-4 font-serif text-[1.25rem] tracking-[-0.01em]">{title}</h2>
       {children}
     </section>
   );
@@ -47,13 +47,13 @@ function Profile() {
       <div className="flex items-center gap-4">
         <Avatar src={user.image} name={user.name || user.email} size={56} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-serif text-xl">{user.name || "Listener"}</p>
+          <p className="truncate font-serif text-[1.25rem]">{user.name || "Listener"}</p>
           <p className="truncate text-sm text-ink-faint">{user.email}</p>
         </div>
       </div>
       <p className="mt-5 text-sm text-ink-soft">
-        {formatCount(library.savedIds.size, "saved talk")} · {formatCount(library.likedIds.size, "liked talk")} ·{" "}
-        {formatCount(library.playlists.length, "playlist")}
+        {formatCount(library.savedIds.size, "saved talk")}, {formatCount(library.likedIds.size, "liked talk")} and{" "}
+        {formatCount(library.playlists.length, "playlist")}.
       </p>
       <Button
         variant="secondary"

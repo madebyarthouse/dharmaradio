@@ -1,11 +1,12 @@
 @import "tailwindcss";
 @import "@fontsource-variable/newsreader/wght-italic.css";
 @import "@fontsource-variable/newsreader/wght.css";
-@import "@fontsource-variable/hanken-grotesk/wght.css";
+@import "@fontsource-variable/geist-mono/wght.css";
 
 /*
- * Quiet dusk — warm paper by day, deep indigo by night, one saffron accent.
+ * Quiet dusk: warm paper by day, deep indigo by night, one saffron accent.
  * Every color is a CSS variable so dark mode is a single token swap.
+ * Type: Newsreader for titles only, Geist Mono for everything you read or press.
  */
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
@@ -66,6 +67,45 @@
   --shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 12px 32px -12px oklch(0 0 0 / 0.5);
 }
 
+/*
+ * Night: the sitting screen is always after dusk, whichever theme the app is in.
+ * The dark indigo, a shade deeper, with the same saffron.
+ */
+.night {
+  color-scheme: dark;
+  --paper: oklch(0.155 0.034 275);
+  --paper-raised: oklch(0.215 0.04 278);
+  --paper-sunken: oklch(0.13 0.03 275);
+  --ink: oklch(0.93 0.018 80);
+  --ink-soft: oklch(0.78 0.02 80);
+  --ink-faint: oklch(0.62 0.03 275);
+  --line: oklch(0.93 0.018 80 / 0.1);
+  --line-strong: oklch(0.93 0.018 80 / 0.18);
+  --accent: oklch(0.76 0.12 65);
+  --accent-ink: oklch(0.8 0.11 68);
+  --accent-wash: oklch(0.76 0.12 65 / 0.14);
+  --on-accent: oklch(0.19 0.035 275);
+  --glow: oklch(0.5 0.12 285 / 0.35);
+  --shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 12px 32px -12px oklch(0 0 0 / 0.5);
+  --sky-high: oklch(0.13 0.03 272);
+  --sky-low: oklch(0.2 0.05 288);
+  --sky-horizon: oklch(0.62 0.13 52 / 0.2);
+}
+
+:root {
+  /* The breathing sun, drawn from the accent. */
+  --sun-core: oklch(0.9 0.07 80);
+  --sun-halo: oklch(0.72 0.13 60 / 0.4);
+  /* Height of the sticky top bar, for anything that sticks below it. */
+  --bar-h: calc(3.5rem + env(safe-area-inset-top));
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --bar-h: calc(4rem + env(safe-area-inset-top));
+  }
+}
+
 @theme inline {
   --color-paper: var(--paper);
   --color-paper-raised: var(--paper-raised);
@@ -84,16 +124,41 @@
 
 @theme {
   --font-serif: "Newsreader Variable", "Iowan Old Style", Georgia, serif;
-  --font-sans: "Hanken Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  /* One face for UI, body and meta: a calm, even mono, like a liner note. */
+  --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: var(--font-mono);
   --breakpoint-xs: 26rem;
+  /* One width for the header, the page and the docked player, so their edges align. */
+  --container-shell: 72rem;
+
+  /* Motion: a strong ease-out for UI, the drawer curve for sheets. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-calm: cubic-bezier(0.32, 0.72, 0, 1);
   --animate-breathe: breathe 4s ease-in-out infinite alternate;
-  --animate-pop: pop 160ms cubic-bezier(0.32, 0.72, 0, 1);
-  --animate-rise: rise 420ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  --animate-pop: pop 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  --animate-rise: rise 280ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  --animate-fade: fade 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  --animate-dawn: dawn 10s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+
+  /*
+   * Movement is scaled by --motion (1, or 0 under reduced motion), so the same
+   * keyframes become plain fades when movement is unwelcome.
+   */
+  @keyframes dawn {
+    0%,
+    100% {
+      transform: translateY(42%) scale(0.86);
+    }
+    40%,
+    50% {
+      transform: translateY(0) scale(1);
+    }
+  }
 
   @keyframes pop {
     from {
-      transform: scale(0.96);
+      scale: calc(1 - 0.04 * var(--motion));
       opacity: 0;
     }
   }
@@ -106,20 +171,28 @@
 
   @keyframes sheet-up {
     from {
-      transform: translateY(100%);
+      translate: 0 calc(100% * var(--motion));
+      opacity: calc(var(--motion));
+    }
+  }
+
+  @keyframes sheet-down {
+    to {
+      translate: 0 calc(100% * var(--motion));
+      opacity: calc(var(--motion));
     }
   }
 
   @keyframes sheet-in {
     from {
-      transform: translateX(24px);
+      translate: calc(24px * var(--motion)) 0;
       opacity: 0;
     }
   }
 
   @keyframes rise {
     from {
-      transform: translateY(8px);
+      translate: 0 calc(8px * var(--motion));
       opacity: 0;
     }
   }
@@ -136,6 +209,15 @@
   }
 }
 
+/* Hover belongs to mice and trackpads; touch taps must not leave things lit. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
@@ -144,9 +226,14 @@
     text-rendering: optimizeLegibility;
   }
 
+  :root {
+    --motion: 1;
+  }
+
   body {
-    @apply bg-paper font-sans text-ink;
-    font-feature-settings: "ss01";
+    @apply bg-paper font-mono text-ink;
+    font-size: 0.875rem;
+    line-height: 1.6;
   }
 
   ::selection {
@@ -188,40 +275,121 @@
     padding-top: env(safe-area-inset-top);
   }
 
-  /* Soft dusk glow behind page headers; decorative only. */
-  .dusk-glow {
-    pointer-events: none;
-    background:
-      radial-gradient(60% 50% at 20% 0%, var(--glow), transparent 70%),
-      radial-gradient(40% 40% at 90% 10%, var(--accent-wash), transparent 70%);
-    mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent),
-      linear-gradient(to bottom, black 40%, transparent);
-    mask-composite: intersect;
-  }
-
-  .grain {
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
-    opacity: 0.05;
-    mix-blend-mode: multiply;
-  }
-
-  [data-theme="dark"] .grain {
-    mix-blend-mode: screen;
-    opacity: 0.035;
-  }
-
   .text-balance {
     text-wrap: balance;
   }
+
+  /* The sky behind a sit: high indigo settling into a warm horizon. */
+  .night-sky {
+    background:
+      radial-gradient(90% 50% at 50% 108%, var(--sky-horizon), transparent 70%),
+      linear-gradient(to bottom, var(--sky-high), var(--paper) 45%, var(--sky-low));
+  }
+
+  /* The breathing sun: a warm core inside a soft halo. */
+  .sun {
+    background: radial-gradient(
+      circle at 50% 45%,
+      var(--sun-core),
+      var(--accent) 60%,
+      color-mix(in oklch, var(--accent) 45%, transparent) 67%,
+      transparent 71%
+    );
+  }
+  .sun-halo {
+    background: radial-gradient(circle, var(--sun-halo), transparent 68%);
+  }
+}
+
+/* The shell's side padding, shared by header, main and player. */
+@utility px-shell {
+  padding-inline: 1.25rem;
+  @media (width >= 40rem) {
+    padding-inline: 2rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 3rem;
+  }
+}
+
+/* Bleed a row out to the shell's edge, keeping its first item aligned with the text. */
+@utility bleed-shell {
+  margin-inline: -1.25rem;
+  padding-inline: 1.25rem;
+  scroll-padding-inline: 1.25rem;
+  @media (width >= 40rem) {
+    margin-inline: -2rem;
+    padding-inline: 2rem;
+    scroll-padding-inline: 2rem;
+  }
+  @media (width >= 64rem) {
+    margin-inline: -3rem;
+    padding-inline: 3rem;
+    scroll-padding-inline: 3rem;
+  }
+}
+
+/* Pressables give a little under the finger. Never on reduced motion. */
+@utility press {
+  transition-property: scale, opacity, background-color, color, border-color, box-shadow;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out);
+  @media (prefers-reduced-motion: no-preference) {
+    &:active:not(:disabled) {
+      scale: 0.97;
+    }
+  }
+}
+
+/* Shelf items arrive one after another, briefly. Set --i per item. */
+@utility stagger {
+  animation: rise 260ms var(--ease-out) both;
+  animation-delay: calc(min(var(--i, 0), 8) * 40ms);
+}
+
+/*
+ * The docked player's artwork grows into the full-screen player's.
+ * Exit is quicker than entry.
+ */
+::view-transition-group(np-art) {
+  animation-duration: 300ms;
+  animation-timing-function: var(--ease-drawer);
+}
+::view-transition-new(np-sheet) {
+  animation: sheet-up 300ms var(--ease-drawer) both;
+}
+::view-transition-old(np-sheet) {
+  animation: sheet-down 200ms var(--ease-out) both;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+}
+html.np-vt [data-np-sheet] {
+  animation: none !important;
+}
+html.np-closing::view-transition-group(np-art) {
+  animation-duration: 200ms;
+  animation-timing-function: var(--ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion: 0;
+  }
+  /* Keep fades; drop movement. */
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: opacity, color, background-color, border-color, box-shadow, fill, stroke !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-breathe,
+  .animate-dawn,
+  .animate-spin {
+    animation: none !important;
+  }
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
   }
 }

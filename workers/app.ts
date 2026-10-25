@@ -71,8 +71,11 @@ export default {
   async fetch(request, env, ctx) {
     const handlerContext = { cloudflare: { env, ctx } };
 
+    const pathname = new URL(request.url).pathname;
+    // API calls and ranged audio streams never go through the HTML edge cache.
     if (
-      new URL(request.url).pathname.startsWith("/api/") ||
+      pathname.startsWith("/api/") ||
+      pathname.startsWith("/audio/") ||
       request.method !== "GET" ||
       !isEdgeCacheEnabled
     ) {

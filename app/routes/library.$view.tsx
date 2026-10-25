@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Link, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, Bookmark, Clock3, Heart, History } from "lucide-react";
+import { Bookmark, Clock3, Heart, History } from "lucide-react";
 import { useLibraryTalks, type LibraryView } from "~/hooks/use-library-talks";
 import { noindex, shellHeaders } from "~/lib/shell-route";
 import { formatCount } from "~/lib/format";
@@ -10,32 +10,28 @@ import { EmptyState, PageHeader, Pagination, buttonClass } from "~/components/ui
 
 const VIEWS: Record<
   LibraryView,
-  { title: string; eyebrow: string; empty: string; emptyBody: string; icon: React.ReactNode }
+  { title: string; empty: string; emptyBody: string; icon: React.ReactNode }
 > = {
   "in-progress": {
     title: "Continue listening",
-    eyebrow: "In progress",
     empty: "Nothing in progress",
     emptyBody: "Talks you start will wait here, right where you paused.",
     icon: <Clock3 size={20} />,
   },
   saved: {
     title: "Saved for later",
-    eyebrow: "Saved",
     empty: "Nothing saved yet",
     emptyBody: "Tap the bookmark on any talk to keep it here for later.",
     icon: <Bookmark size={20} />,
   },
   liked: {
     title: "Talks you love",
-    eyebrow: "Liked",
     empty: "No liked talks yet",
     emptyBody: "Use the heart to remember the talks that stayed with you.",
     icon: <Heart size={20} />,
   },
   history: {
     title: "Listening history",
-    eyebrow: "History",
     empty: "No history yet",
     emptyBody: "Everything you listen to appears here, newest first.",
     icon: <History size={20} />,
@@ -51,7 +47,7 @@ export function loader({ params }: LoaderFunctionArgs) {
 }
 
 export const meta: MetaFunction = ({ params }) => [
-  { title: `${isView(params.view) ? VIEWS[params.view].title : "Library"} — Dharma Radio` },
+  { title: `${isView(params.view) ? VIEWS[params.view].title : "Library"}, Dharma Radio` },
   noindex,
 ];
 export const headers = shellHeaders;
@@ -62,13 +58,13 @@ export default function LibraryViewPage() {
 
   return (
     <div className="animate-rise">
-      <Link
-        to="/library"
-        className="-ml-2 mt-6 inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-sm text-ink-soft hover:text-ink"
-      >
-        <ArrowLeft size={16} /> Library
-      </Link>
-      <PageHeader eyebrow={config.eyebrow} title={config.title} className="pt-2 md:pt-4" />
+      <PageHeader
+        breadcrumbs={[
+          { label: "Practice", to: "/practice" },
+          { label: config.title, to: `/library/${view}` },
+        ]}
+        title={config.title}
+      />
       <RequireAccount>
         <ViewList view={view as LibraryView} />
       </RequireAccount>
@@ -109,7 +105,7 @@ function ViewList({ view }: { view: LibraryView }) {
 
   return (
     <>
-      <p className="mb-2 text-sm text-ink-faint">{formatCount(state.total, "talk")}</p>
+      <p className="mb-2 text-xs text-ink-faint">{formatCount(state.total, "talk")}</p>
       <TalkList talks={state.talks} />
       <Pagination current={state.page} pages={state.totalPages} />
     </>

@@ -12,11 +12,14 @@ import {
 } from "react-router";
 import stylesheet from "~/tailwind.css?url";
 import { LibraryProvider } from "~/contexts/library-context";
+import { PracticeProvider } from "~/contexts/practice-context";
+import { TimerProvider } from "~/contexts/timer-context";
 import { AudioProvider } from "~/contexts/audio-context";
 import { UIProvider } from "~/contexts/ui-context";
 import { config } from "~/config";
 import { PHProvider } from "./contexts/posthog";
-import { MobileTopBar, Sidebar, TabBar } from "~/components/shell";
+import { TabBar, TopBar } from "~/components/shell";
+import { SessionScreen } from "~/components/session";
 import { PlayerBar } from "~/components/player";
 import { AddToPlaylistDialog, SignInDialog, Toaster } from "~/components/overlays";
 import { buttonClass } from "~/components/ui/primitives";
@@ -73,9 +76,13 @@ function Providers({ children }: { children: React.ReactNode }) {
   return (
     <PHProvider apiHost={data?.posthogApiHost ?? ""} publicKey={data?.posthogPublicKey ?? null}>
       <LibraryProvider>
-        <AudioProvider>
-          <UIProvider>{children}</UIProvider>
-        </AudioProvider>
+        <PracticeProvider>
+          <AudioProvider>
+            <TimerProvider>
+              <UIProvider>{children}</UIProvider>
+            </TimerProvider>
+          </AudioProvider>
+        </PracticeProvider>
       </LibraryProvider>
     </PHProvider>
   );
@@ -84,22 +91,13 @@ function Providers({ children }: { children: React.ReactNode }) {
 function Chrome({ children }: { children: React.ReactNode }) {
   return (
     <Providers>
-      <div aria-hidden className="grain fixed inset-0 z-[70]" />
-      <div className="lg:flex">
-        <div className="sticky top-0 hidden h-dvh lg:block">
-          <Sidebar />
-        </div>
-        <div className="min-w-0 flex-1">
-          <MobileTopBar />
-          <main className="mx-auto w-full max-w-5xl px-5 pb-44 sm:px-8 lg:px-12 lg:pb-32">
-            {children}
-          </main>
-        </div>
-      </div>
-      <div className="fixed inset-x-0 bottom-0 z-40 lg:left-64">
+      <TopBar />
+      <main className="px-shell mx-auto w-full max-w-shell pb-48 md:pb-36">{children}</main>
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 [&>nav]:pointer-events-auto">
         <PlayerBar />
         <TabBar />
       </div>
+      <SessionScreen />
       <Toaster />
       <SignInDialog />
       <AddToPlaylistDialog />
@@ -125,10 +123,10 @@ export function ErrorBoundary() {
     <Chrome>
       <div className="flex min-h-[60dvh] flex-col items-center justify-center text-center">
         <BrandMark size={48} />
-        <h1 className="mt-6 font-serif text-4xl tracking-tight">
+        <h1 className="mt-6 font-serif text-[2.375rem] leading-tight tracking-[-0.02em]">
           {notFound ? "Nothing here" : "Something went quiet"}
         </h1>
-        <p className="mt-3 max-w-sm text-ink-soft">
+        <p className="mt-3 max-w-sm text-[0.875rem] leading-relaxed text-ink-soft">
           {notFound
             ? "This page doesn’t exist, or the talk has moved."
             : "An unexpected error occurred. Breathe in, and try again in a moment."}

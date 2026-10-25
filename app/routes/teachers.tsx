@@ -103,14 +103,14 @@ export default function Teachers() {
   return (
     <div className="animate-rise">
       <PageHeader
-        eyebrow="Teachers"
+        breadcrumbs={[{ label: "Listen", to: "/listen" }, { label: "Teachers", to: "/teachers" }]}
         title={q ? <>Teachers matching “{q}”</> : "Voices of the dharma"}
         description={`${formatCount(pagination.total, "teacher")} sharing talks from retreats and sitting groups.`}
       >
         <SearchField placeholder="Find a teacher" defaultValue={q} className="max-w-xl" />
       </PageHeader>
 
-      <div className="sticky top-14 z-20 -mx-5 mb-2 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:top-0 lg:-mx-12 lg:px-12">
+      <div className="sticky top-[var(--bar-h)] z-20 -mx-5 mb-2 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
         <SortTabs
           current={params.get("sort") ?? "talks"}
           order={params.get("order") ?? "desc"}

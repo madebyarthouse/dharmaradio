@@ -17,7 +17,7 @@ import { useUI } from "~/contexts/ui-context";
 import { formatDate, formatDuration, formatRemaining } from "~/lib/format";
 import { toPlayerTalk, type TalkListItem } from "~/lib/talk";
 import { cn } from "~/lib/cn";
-import { Avatar } from "~/components/ui/primitives";
+import { TalkArt } from "~/components/artwork";
 import { PlayGlyph } from "~/components/play-glyph";
 
 export function TalkList({
@@ -90,7 +90,12 @@ export function TalkRow({
       </Link>,
     );
   }
-  if (talk.publicationDate) meta.push(<span key="date">{formatDate(talk.publicationDate)}</span>);
+  if (talk.publicationDate)
+    meta.push(
+      <span key="date" className="tabular-nums">
+        {formatDate(talk.publicationDate)}
+      </span>,
+    );
   meta.push(
     <span key="duration" className="tabular-nums">
       {progress?.completed ? (
@@ -110,64 +115,59 @@ export function TalkRow({
   return (
     <div
       className={cn(
-        "group relative -mx-3 flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors md:gap-4",
+        "group relative -mx-3 flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors md:gap-4",
         "hover:bg-paper-sunken/70",
         isCurrent && "bg-accent-wash hover:bg-accent-wash",
       )}
     >
       {index != null ? (
-        <span className="hidden w-6 shrink-0 text-right font-serif text-sm tabular-nums text-ink-faint sm:block">
-          {index}
-        </span>
+        <span className="hidden w-6 shrink-0 text-right text-xs tabular-nums text-ink-faint sm:block">{index}</span>
       ) : null}
 
       <button
         type="button"
         onClick={handlePlay}
         aria-label={isCurrent && isPlaying ? `Pause ${talk.title}` : `Play ${talk.title}`}
-        className="relative z-10 shrink-0 rounded-full transition-transform duration-150 active:scale-95"
+        className={cn("press relative z-10 shrink-0", showTeacher ? "rounded-md" : "rounded-full")}
       >
-        {showTeacher && talk.teacher ? (
-          <span className="relative block">
-            <Avatar src={talk.teacher.profileImageUrl} name={talk.teacher.name} size={48} />
-            <span
-              className={cn(
-                "absolute inset-0 flex items-center justify-center rounded-full bg-ink/45 text-paper transition-opacity",
-                isCurrent ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
-              )}
-            >
-              <PlayGlyph playing={isCurrent && isPlaying} size={18} />
-            </span>
-          </span>
-        ) : (
+        {!showTeacher ? (
           <span
             className={cn(
-              "flex size-11 items-center justify-center rounded-full border transition-colors",
-              isCurrent
-                ? "border-accent bg-accent text-on-accent"
-                : "border-line-strong text-ink group-hover:border-ink",
+              "flex size-11 items-center justify-center rounded-full ring-1 ring-inset transition-colors",
+              isCurrent ? "bg-accent text-on-accent ring-accent" : "text-ink ring-line-strong group-hover:ring-ink-faint",
             )}
           >
-            <PlayGlyph playing={isCurrent && isPlaying} size={16} />
+            <PlayGlyph playing={isCurrent && isPlaying} size={15} />
           </span>
+        ) : (
+        <span className="relative block">
+          <TalkArt
+            src={talk.teacher?.profileImageUrl}
+            seed={talk.teacher?.slug ?? talk.id}
+            name={talk.teacher?.name ?? talk.title}
+            size={52}
+            className="[--art-radius:0.375rem]"
+          />
+          <span
+            className={cn(
+              "absolute inset-0 flex items-center justify-center rounded-md bg-ink/40 text-paper transition-opacity duration-150",
+              isCurrent ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
+            )}
+          >
+            <PlayGlyph playing={isCurrent && isPlaying} size={18} />
+          </span>
+        </span>
         )}
       </button>
 
       <div className="min-w-0 flex-1">
         <Link
           to={`/talks/${talk.slug}`}
-          className="line-clamp-2 font-serif text-[1.075rem] leading-snug tracking-[-0.005em] text-ink after:absolute after:inset-0 after:content-['']"
+          className="line-clamp-2 font-serif text-[1.0625rem] leading-snug tracking-[-0.005em] text-ink after:absolute after:inset-0 after:content-['']"
         >
           {talk.title}
         </Link>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[0.8125rem] text-ink-faint">
-          {meta.map((node, i) => (
-            <span key={i} className="inline-flex items-center gap-2">
-              {i > 0 ? <span aria-hidden className="text-ink-faint/50">·</span> : null}
-              {node}
-            </span>
-          ))}
-        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-ink-faint">{meta}</div>
         {ratio > 0 ? (
           <div className="mt-2 h-[3px] w-full max-w-48 overflow-hidden rounded-full bg-line">
             <div className="h-full rounded-full bg-accent" style={{ width: `${ratio * 100}%` }} />
@@ -194,7 +194,7 @@ export function SaveButton({ talkId, className }: { talkId: number; className?: 
       aria-pressed={saved}
       aria-label={saved ? "Remove from saved" : "Save for later"}
       className={cn(
-        "inline-flex size-10 items-center justify-center rounded-full transition-[color,background-color,transform] duration-150 hover:bg-paper-sunken active:scale-90",
+        "press inline-flex size-10 items-center justify-center rounded-full hover:bg-paper-sunken",
         saved ? "text-accent-ink" : "text-ink-faint hover:text-ink",
         className,
       )}
@@ -214,7 +214,7 @@ export function LikeButton({ talkId, className, size = 18 }: { talkId: number; c
       aria-pressed={liked}
       aria-label={liked ? "Unlike" : "Like"}
       className={cn(
-        "inline-flex size-10 items-center justify-center rounded-full transition-[color,background-color,transform] duration-150 hover:bg-paper-sunken active:scale-90",
+        "press inline-flex size-10 items-center justify-center rounded-full hover:bg-paper-sunken",
         liked ? "text-accent-ink" : "text-ink-faint hover:text-ink",
         className,
       )}
@@ -245,7 +245,7 @@ export function TalkMenu({ talk, align = "end" }: { talk: TalkListItem; align?: 
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger
         aria-label={`More actions for ${talk.title}`}
-        className="inline-flex size-10 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-paper-sunken hover:text-ink data-[state=open]:bg-paper-sunken data-[state=open]:text-ink"
+        className="press inline-flex size-10 items-center justify-center rounded-full text-ink-faint hover:bg-paper-sunken hover:text-ink data-[state=open]:bg-paper-sunken data-[state=open]:text-ink"
       >
         <MoreHorizontal size={18} />
       </DropdownMenu.Trigger>
@@ -291,10 +291,10 @@ export function TalkMenu({ talk, align = "end" }: { talk: TalkListItem; align?: 
 }
 
 export const menuContentClass =
-  "z-50 min-w-56 origin-[var(--radix-dropdown-menu-content-transform-origin)] rounded-2xl border border-line bg-paper-raised p-1.5 text-sm text-ink shadow-soft data-[state=open]:animate-pop";
+  "z-50 min-w-56 origin-[var(--radix-dropdown-menu-content-transform-origin)] rounded-xl border border-line bg-paper-raised p-1.5 text-[0.8125rem] text-ink shadow-soft data-[state=open]:animate-pop";
 
 export const menuItemClass =
-  "flex h-10 cursor-default select-none items-center gap-3 rounded-xl px-3 outline-none data-[highlighted]:bg-paper-sunken [&_svg]:text-ink-soft";
+  "flex h-10 cursor-default select-none items-center gap-3 rounded-lg px-3 outline-none data-[highlighted]:bg-paper-sunken [&_svg]:text-ink-soft";
 
 function MenuItem({
   icon,

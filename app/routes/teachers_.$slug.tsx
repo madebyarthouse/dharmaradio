@@ -1,13 +1,13 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Link, useLoaderData, useSearchParams } from "react-router";
-import { ExternalLink, HandHeart } from "lucide-react";
+import { ExternalLink, HandHeart, MapPin } from "lucide-react";
 import { useState } from "react";
 import { useAudio } from "~/contexts/audio-context";
 import { fromFlatRow, toPlayerTalk } from "~/lib/talk";
 import { formatCount } from "~/lib/format";
 import { TalkList } from "~/components/talk-row";
-import { CollectionCard } from "~/components/collection-cards";
-import { Avatar, Pagination, Section, SortTabs, buttonClass } from "~/components/ui/primitives";
+import { RetreatTicket } from "~/components/collection-cards";
+import { Avatar, Breadcrumbs, ListBar, MetaList, Pagination, Section, Shelf, SortTabs, buttonClass, titleClass } from "~/components/ui/primitives";
 import { PlayGlyph } from "~/components/play-glyph";
 import { cn } from "~/lib/cn";
 import { eq, sql } from "drizzle-orm";
@@ -36,11 +36,11 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
 
   const { teacher } = data;
   return [
-    { title: `${teacher.name} — Dharma talks | Dharma Radio` },
+    { title: `${teacher.name}, dharma talks | Dharma Radio` },
     { name: "description", content: teacher.description },
     {
       property: "og:title",
-      content: `${teacher.name} — Dharma talks | Dharma Radio`,
+      content: `${teacher.name}, dharma talks | Dharma Radio`,
     },
     { property: "og:description", content: teacher.description },
   ];
@@ -55,7 +55,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
 
   return withCachedJson(
     context.cloudflare.env.DB_QUERY_CACHE,
-    `teacher:${slug}:${request.url}`,
+    `teacher:v2:${slug}:${request.url}`,
     900,
     async () => {
       const { page, sort } = getRequestParams(request, {
@@ -128,13 +128,16 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
           id: retreats.id,
           title: retreats.title,
           slug: retreats.slug,
-          description: retreats.description,
           talksCount: sql<number>`count(distinct ${talks.id})`.as("talks_count"),
+          // Stored in seconds; cards take milliseconds.
+          firstDate: sql<number>`min(${talks.publicationDate}) * 1000`.as("first_date"),
+          lastDate: sql<number>`max(${talks.publicationDate}) * 1000`.as("last_date"),
         })
         .from(retreats)
         .innerJoin(talks, eq(talks.retreatId, retreats.id))
         .where(eq(talks.teacherId, teacher.id))
-        .groupBy(retreats.id);
+        .groupBy(retreats.id)
+        .orderBy(sql`last_date desc`);
 
       const centersQuery = database
         .select({
@@ -186,25 +189,26 @@ export default function TeacherDetail() {
 
   return (
     <div className="animate-rise">
-      <header className="relative -mx-5 overflow-hidden px-5 pb-8 pt-10 sm:-mx-8 sm:px-8 md:pt-16 lg:-mx-12 lg:px-12">
-        <div aria-hidden className="dusk-glow absolute inset-0" />
+      <header className="relative pb-8 pt-7 md:pt-12">
+        <Breadcrumbs
+          items={[
+            { label: "Listen", to: "/listen" },
+            { label: "Teachers", to: "/teachers" },
+            { label: teacher.name, to: `/teachers/${teacher.slug}` },
+          ]}
+        />
         <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:gap-8">
-          <Avatar
-            src={teacher.profileImageUrl}
-            name={teacher.name}
-            size={144}
-            className="shadow-soft ring-4 ring-paper"
-          />
+          <Avatar src={teacher.profileImageUrl} name={teacher.name} size={168} className="shadow-soft" />
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-accent-ink">Teacher</p>
-            <h1 className="mt-2 text-balance font-serif text-4xl leading-[1.05] tracking-tight md:text-6xl">
-              {teacher.name}
-            </h1>
-            <p className="mt-3 text-sm text-ink-soft">
-              {formatCount(Number(teacher.talksCount), "talk")}
-              {Number(teacher.retreatsCount) ? ` · ${formatCount(Number(teacher.retreatsCount), "retreat")}` : ""}
-              {Number(teacher.centersCount) ? ` · ${formatCount(Number(teacher.centersCount), "center")}` : ""}
-            </p>
+            <h1 className={titleClass}>{teacher.name}</h1>
+            <MetaList
+              className="mt-3"
+              items={[
+                formatCount(Number(teacher.talksCount), "talk"),
+                Number(teacher.retreatsCount) ? formatCount(Number(teacher.retreatsCount), "retreat") : null,
+                Number(teacher.centersCount) ? formatCount(Number(teacher.centersCount), "center") : null,
+              ]}
+            />
           </div>
         </div>
 
@@ -231,7 +235,7 @@ export default function TeacherDetail() {
           <div className="relative mt-8 max-w-2xl">
             <p
               className={cn(
-                "whitespace-pre-line text-pretty font-serif text-lg leading-relaxed text-ink-soft",
+                "whitespace-pre-line text-pretty text-sm leading-relaxed text-ink-soft md:text-[0.9375rem]",
                 longBio && !expanded && "line-clamp-4",
               )}
             >
@@ -241,7 +245,7 @@ export default function TeacherDetail() {
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="mt-2 text-sm font-medium text-accent-ink hover:underline"
+                className="mt-2 text-[0.8125rem] text-accent-ink underline decoration-transparent underline-offset-4 hover:decoration-current"
               >
                 {expanded ? "Show less" : "Read more"}
               </button>
@@ -251,25 +255,16 @@ export default function TeacherDetail() {
       </header>
 
       {retreatList.length ? (
-        <Section title="Retreats">
-          <div className="-mx-5 flex snap-x scroll-px-5 gap-3 overflow-x-auto px-5 pb-2 scrollbar-none sm:scroll-px-8 lg:scroll-px-12 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
-            {retreatList.map((retreat) => (
-              <div key={retreat.id} className="w-72 shrink-0 snap-start">
-                <CollectionCard
-                  to={`/retreats/${retreat.slug}`}
-                  title={retreat.title}
-                  meta={formatCount(Number(retreat.talksCount), "talk")}
-                  italic
-                />
-              </div>
-            ))}
-          </div>
-        </Section>
+        <Shelf title="Retreats" label={`Retreats with ${teacher.name}`}>
+          {retreatList.map((retreat) => (
+            <RetreatTicket key={retreat.id} retreat={retreat} />
+          ))}
+        </Shelf>
       ) : null}
 
       <section id="talks" className="scroll-mt-16 py-6 md:py-8">
-        <div className="sticky top-14 z-20 -mx-5 mb-2 flex items-center justify-between gap-4 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:top-0 lg:-mx-12 lg:px-12">
-          <h2 className="font-serif text-2xl tracking-tight">Talks</h2>
+        <ListBar>
+          <h2 className="font-serif text-[1.5rem] leading-tight tracking-[-0.01em]">Talks</h2>
           <SortTabs
             current={params.get("sort") ?? "date"}
             order={params.get("order") ?? "desc"}
@@ -279,7 +274,7 @@ export default function TeacherDetail() {
               { field: "duration", label: "Length" },
             ]}
           />
-        </div>
+        </ListBar>
         <TalkList talks={talkItems} showTeacher={false} />
         <Pagination current={pagination.current} pages={pagination.pages} />
       </section>
@@ -291,10 +286,11 @@ export default function TeacherDetail() {
               <li key={center.id}>
                 <Link
                   to={`/centers/${center.slug}`}
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-sm hover:bg-paper-raised"
+                  className="press inline-flex h-10 items-center gap-2 rounded-full px-4 text-[0.8125rem] ring-1 ring-inset ring-line hover:bg-paper-sunken"
                 >
+                  <MapPin size={14} className="text-ink-faint" aria-hidden />
                   {center.name}
-                  <span className="text-ink-faint">{Number(center.talksCount)}</span>
+                  <span className="text-xs tabular-nums text-ink-faint">{Number(center.talksCount)}</span>
                 </Link>
               </li>
             ))}

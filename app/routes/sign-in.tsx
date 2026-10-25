@@ -6,7 +6,7 @@ import { noindex, shellHeaders } from "~/lib/shell-route";
 import { AuthPanel } from "~/components/auth-panel";
 import { BrandMark } from "~/components/brand";
 
-export const meta: MetaFunction = () => [{ title: "Sign in — Dharma Radio" }, noindex];
+export const meta: MetaFunction = () => [{ title: "Sign in, Dharma Radio" }, noindex];
 export const headers = shellHeaders;
 
 export default function SignIn() {
@@ -23,7 +23,7 @@ export default function SignIn() {
   return (
     <div className="mx-auto flex min-h-[75dvh] max-w-sm flex-col justify-center py-12 animate-rise">
       <BrandMark size={44} />
-      <h1 className="mt-6 font-serif text-4xl tracking-tight">Welcome</h1>
+      <h1 className="mt-6 font-serif text-[2.375rem] leading-tight tracking-[-0.02em]">Welcome</h1>
       <p className="mb-8 mt-2 text-ink-soft">
         Sign in or create an account to save talks and sync your listening.
       </p>
@@ -33,5 +33,5 @@ export default function SignIn() {
 }
 
 function safeNext(value: string | null) {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/library";
+  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/practice";
 }

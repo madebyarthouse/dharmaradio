@@ -11,8 +11,8 @@ import { cn } from "~/lib/cn";
 
 const panelClass = cn(
   "fixed z-50 bg-paper outline-none",
-  "inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-3xl border-t border-line px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 data-[state=open]:animate-[sheet-up_360ms_var(--ease-calm)]",
-  "sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-[26rem] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl sm:border sm:p-8 sm:shadow-soft sm:data-[state=open]:animate-pop",
+  "inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-2xl border-t border-line px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 data-[state=open]:animate-[sheet-up_300ms_var(--ease-drawer)]",
+  "sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-[26rem] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border sm:p-8 sm:shadow-soft sm:data-[state=open]:animate-pop",
 );
 
 function SheetHandle() {
@@ -37,12 +37,12 @@ export function SignInDialog() {
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && library.dismissSignIn()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-[2px] data-[state=open]:animate-[fade_200ms]" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-[2px] data-[state=open]:animate-fade" />
         <Dialog.Content className={panelClass}>
           <SheetHandle />
           <CloseButton />
           <BrandMark size={36} />
-          <Dialog.Title className="mt-4 font-serif text-2xl tracking-tight">
+          <Dialog.Title className="mt-4 font-serif text-[1.5rem] leading-tight tracking-[-0.01em]">
             Keep your practice in one place
           </Dialog.Title>
           <Dialog.Description className="mb-6 mt-2 text-sm text-ink-soft">
@@ -90,11 +90,11 @@ export function AddToPlaylistDialog() {
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && close()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-[2px] data-[state=open]:animate-[fade_200ms]" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-[2px] data-[state=open]:animate-fade" />
         <Dialog.Content className={panelClass}>
           <SheetHandle />
           <CloseButton />
-          <Dialog.Title className="font-serif text-2xl tracking-tight">Add to playlist</Dialog.Title>
+          <Dialog.Title className="font-serif text-[1.5rem] leading-tight tracking-[-0.01em]">Add to playlist</Dialog.Title>
           <Dialog.Description className="mt-1 line-clamp-1 text-sm text-ink-soft">
             {talk?.title}
           </Dialog.Description>
