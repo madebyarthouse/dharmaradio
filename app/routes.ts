@@ -2,6 +2,7 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
   index("routes/_index.tsx"),
+  route("offline", "routes/offline.tsx"),
   route("talks", "routes/talks.tsx"),
   route("talks/:slug", "routes/talks_.$slug.tsx"),
   route("teachers", "routes/teachers.tsx"),
@@ -10,6 +11,15 @@ export default [
   route("centers/:slug", "routes/centers_.$slug.tsx"),
   route("retreats", "routes/retreats.tsx"),
   route("retreats/:slug", "routes/retreats_.$slug.tsx"),
+  route("explore", "routes/explore.tsx"),
+  route("library", "routes/library.tsx"),
+  route("library/playlists/:id", "routes/library.playlists.$id.tsx"),
+  route("library/:view", "routes/library.$view.tsx"),
+  route("sign-in", "routes/sign-in.tsx"),
+  route("account", "routes/account.tsx"),
+  route("api/auth/*", "routes/api.auth.$.ts"),
+  route("api/me", "routes/api.me.ts"),
+  route("api/me/*", "routes/api.me.$.ts"),
   route("api/event", "routes/api.event.ts"),
   route("robots.txt", "routes/[robots.txt].tsx"),
   route("sitemap.xml", "routes/[sitemap.xml].tsx"),

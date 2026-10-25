@@ -1,161 +1,227 @@
-@config "../tailwind.config.ts";
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import "@fontsource-variable/newsreader/wght-italic.css";
+@import "@fontsource-variable/newsreader/wght.css";
+@import "@fontsource-variable/hanken-grotesk/wght.css";
 
-@layer base {
-  * {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+/*
+ * Quiet dusk — warm paper by day, deep indigo by night, one saffron accent.
+ * Every color is a CSS variable so dark mode is a single token swap.
+ */
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  color-scheme: light;
+  --paper: oklch(0.968 0.012 80);
+  --paper-raised: oklch(0.985 0.008 80);
+  --paper-sunken: oklch(0.938 0.016 78);
+  --ink: oklch(0.23 0.018 60);
+  --ink-soft: oklch(0.44 0.018 60);
+  --ink-faint: oklch(0.6 0.014 65);
+  --line: oklch(0.23 0.018 60 / 0.1);
+  --line-strong: oklch(0.23 0.018 60 / 0.18);
+  --accent: oklch(0.6 0.135 52);
+  --accent-ink: oklch(0.47 0.12 48);
+  --accent-wash: oklch(0.6 0.135 52 / 0.12);
+  --on-accent: oklch(0.985 0.008 80);
+  --glow: oklch(0.82 0.09 70 / 0.35);
+  --shadow: 0 1px 2px oklch(0.3 0.03 60 / 0.06), 0 8px 24px -12px oklch(0.3 0.03 60 / 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: oklch(0.19 0.035 275);
+    --paper-raised: oklch(0.235 0.038 275);
+    --paper-sunken: oklch(0.16 0.03 275);
+    --ink: oklch(0.93 0.018 80);
+    --ink-soft: oklch(0.76 0.02 80);
+    --ink-faint: oklch(0.58 0.025 270);
+    --line: oklch(0.93 0.018 80 / 0.09);
+    --line-strong: oklch(0.93 0.018 80 / 0.16);
+    --accent: oklch(0.76 0.12 65);
+    --accent-ink: oklch(0.8 0.11 68);
+    --accent-wash: oklch(0.76 0.12 65 / 0.14);
+    --on-accent: oklch(0.19 0.035 275);
+    --glow: oklch(0.5 0.12 285 / 0.35);
+    --shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 12px 32px -12px oklch(0 0 0 / 0.5);
+  }
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: oklch(0.19 0.035 275);
+  --paper-raised: oklch(0.235 0.038 275);
+  --paper-sunken: oklch(0.16 0.03 275);
+  --ink: oklch(0.93 0.018 80);
+  --ink-soft: oklch(0.76 0.02 80);
+  --ink-faint: oklch(0.58 0.025 270);
+  --line: oklch(0.93 0.018 80 / 0.09);
+  --line-strong: oklch(0.93 0.018 80 / 0.16);
+  --accent: oklch(0.76 0.12 65);
+  --accent-ink: oklch(0.8 0.11 68);
+  --accent-wash: oklch(0.76 0.12 65 / 0.14);
+  --on-accent: oklch(0.19 0.035 275);
+  --glow: oklch(0.5 0.12 285 / 0.35);
+  --shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 12px 32px -12px oklch(0 0 0 / 0.5);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-sunken: var(--paper-sunken);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-wash: var(--accent-wash);
+  --color-on-accent: var(--on-accent);
+  --shadow-soft: var(--shadow);
+}
+
+@theme {
+  --font-serif: "Newsreader Variable", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Hanken Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --breakpoint-xs: 26rem;
+  --ease-calm: cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-breathe: breathe 4s ease-in-out infinite alternate;
+  --animate-pop: pop 160ms cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-rise: rise 420ms cubic-bezier(0.32, 0.72, 0, 1) both;
+
+  @keyframes pop {
+    from {
+      transform: scale(0.96);
+      opacity: 0;
+    }
   }
 
-  ::selection {
-    background-color: #2D3748;
-    color: #ffffff;
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes sheet-up {
+    from {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes sheet-in {
+    from {
+      transform: translateX(24px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      transform: translateY(8px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes breathe {
+    from {
+      transform: scale(0.94);
+      opacity: 0.55;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: #f0f7ff;
-    color: #1A202C;
+    @apply bg-paper font-sans text-ink;
+    font-feature-settings: "ss01";
+  }
+
+  ::selection {
+    background-color: var(--accent-wash);
+    color: var(--ink);
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--paper),
+      0 0 0 4px var(--accent);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em);
   }
 }
 
 @layer utilities {
-  /* Scrollbar utilities */
   .scrollbar-none {
     scrollbar-width: none;
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Soft dusk glow behind page headers; decorative only. */
+  .dusk-glow {
+    pointer-events: none;
+    background:
+      radial-gradient(60% 50% at 20% 0%, var(--glow), transparent 70%),
+      radial-gradient(40% 40% at 90% 10%, var(--accent-wash), transparent 70%);
+    mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent),
+      linear-gradient(to bottom, black 40%, transparent);
+    mask-composite: intersect;
+  }
+
+  .grain {
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+    opacity: 0.05;
+    mix-blend-mode: multiply;
+  }
+
+  [data-theme="dark"] .grain {
+    mix-blend-mode: screen;
+    opacity: 0.035;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
-@layer components {
-  /* Enhanced sky gradient background - more neumorphic */
-  .sky-gradient-bg {
-    background:
-      radial-gradient(ellipse at top, rgba(179, 209, 255, 0.4) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(200, 220, 255, 0.3) 0%, transparent 50%),
-      linear-gradient(180deg, #c8ddff 0%, #e8f2ff 50%, #ffffff 100%);
-  }
-
-  /* Neumorphic card style */
-  .neumorphic-card {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(240, 247, 255, 0.8));
-    box-shadow:
-      8px 8px 16px rgba(179, 209, 255, 0.3),
-      -8px -8px 16px rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-  }
-
-  .neumorphic-card-pressed {
-    background: linear-gradient(145deg, rgba(240, 247, 255, 0.8), rgba(255, 255, 255, 0.9));
-    box-shadow:
-      inset 4px 4px 8px rgba(179, 209, 255, 0.3),
-      inset -4px -4px 8px rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(220, 235, 255, 0.6);
-  }
-
-  .neumorphic-button {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(245, 250, 255, 0.9));
-    box-shadow:
-      4px 4px 8px rgba(179, 209, 255, 0.25),
-      -4px -4px 8px rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    transition: all 0.15s ease;
-  }
-
-  .neumorphic-button:hover {
-    box-shadow:
-      6px 6px 12px rgba(179, 209, 255, 0.3),
-      -6px -6px 12px rgba(255, 255, 255, 0.9);
-  }
-
-  .neumorphic-button:active {
-    box-shadow:
-      inset 3px 3px 6px rgba(179, 209, 255, 0.3),
-      inset -3px -3px 6px rgba(255, 255, 255, 0.9);
-  }
-
-  /* Flying birds animation - birds recede into distance */
-  @keyframes fly {
-    0% {
-      transform: translate(-10vw, 10vh) scale(0.3);
-      opacity: 0;
-    }
-    15% {
-      opacity: 0.15;
-    }
-    50% {
-      transform: translate(50vw, 5vh) scale(0.2);
-      opacity: 0.12;
-    }
-    85% {
-      opacity: 0.08;
-    }
-    100% {
-      transform: translate(110vw, 8vh) scale(0.1);
-      opacity: 0;
-    }
-  }
-
-  .bird {
-    position: absolute;
-    pointer-events: none;
-  }
-
-  .bird-1 {
-    animation: fly 60s ease-in-out infinite;
-    top: 8%;
-  }
-
-  .bird-2 {
-    animation: fly 75s ease-in-out infinite 15s;
-    top: 12%;
-  }
-
-  .bird-3 {
-    animation: fly 70s ease-in-out infinite 35s;
-    top: 10%;
-  }
-
-  /* Waveform bars */
-  .waveform-bar {
-    width: 2px;
-    background-color: rgba(26, 32, 44, 0.15);
-    border-radius: 1px;
-    transition: background-color 0.2s;
-    transform-origin: center;
-  }
-
-  .waveform-bar.played {
-    background-color: #2D3748;
-  }
-
-  /* Legacy animations - keeping for backward compatibility */
-  .breath-circle {
-    animation: breath-circle 4s ease-in-out 500ms infinite alternate;
-  }
-
-  .expanding-line {
-    animation: expanding-line 1s ease-in-out 500ms forwards;
-  }
-
-  @keyframes breath-circle {
-    0% {
-      transform: scale(0.25);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-
-  @keyframes expanding-line {
-    0% {
-      width: 0;
-    }
-    100% {
-      width: 100%;
-    }
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

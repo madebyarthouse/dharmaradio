@@ -1,16 +1,20 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
-import { Link, useLoaderData, useSearchParams } from "react-router";
+import { useLoaderData, useSearchParams } from "react-router";
+import { useAudio } from "~/contexts/audio-context";
+import { fromFlatRow, toPlayerTalk } from "~/lib/talk";
+import { formatCount, formatDate, formatDuration } from "~/lib/format";
+import { TalkList } from "~/components/talk-row";
+import { TeacherTile } from "~/components/collection-cards";
+import { Pagination, Section, SortTabs, buttonClass } from "~/components/ui/primitives";
+import { PlayGlyph } from "~/components/play-glyph";
+import { cn } from "~/lib/cn";
 import { eq, like, sql } from "drizzle-orm";
-import { motion } from "motion/react";
-import { Play } from "lucide-react";
 import { db } from "~/db/client.server";
 import { retreats, talks, teachers, centers } from "~/db/schema";
 import { totalCountField, withPagination } from "~/utils/pagination.server";
 import { getRequestParams } from "~/utils/request-params";
 import { withOrdering } from "~/utils/with-ordering";
 import { cacheHeader } from "pretty-cache-header";
-import { useAudio } from "~/contexts/audio-context";
-import { useState, useEffect } from "react";
 
 const cacheHeaders = {
   "Cache-Control": cacheHeader({
@@ -54,7 +58,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
   });
 
   if (!retreat) {
-    throw new Error("Retreat not found");
+    throw new Response("Not Found", { status: 404 });
   }
 
   const baseQuery = database
@@ -123,358 +127,86 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
 }
 
 export default function RetreatDetail() {
-  const { retreat, talks: talksList, pagination, teachers } = useLoaderData<typeof loader>();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [activeTab, setActiveTab] = useState<"talks" | "teachers">("talks");
-  const { playTalk, setPlaylist, currentTalk, isPlaying } = useAudio();
+  const { retreat, talks: rows, pagination, teachers: teacherList } = useLoaderData<typeof loader>();
+  const [params] = useSearchParams();
+  const audio = useAudio();
+  const sort = params.get("sort") ?? "date";
+  const order = params.get("order") ?? "desc";
 
-  const currentSort = searchParams.get("sort") || "date";
-  const currentOrder = searchParams.get("order") || "desc";
+  const talkItems = rows.map((row) =>
+    fromFlatRow(row, { retreat: { title: retreat.title, slug: retreat.slug } }),
+  );
+  const totalDuration = talkItems.reduce((sum, t) => sum + t.duration, 0);
+  const dates = talkItems
+    .map((t) => (t.publicationDate ? new Date(t.publicationDate).getTime() : NaN))
+    .filter(Number.isFinite);
 
-  // Update playlist whenever talks list changes
-  useEffect(() => {
-    const playlist = talksList.map(talk => ({
-      id: String(talk.id),
-      title: talk.title,
-      teacher: talk.teacherName ?? null,
-      teacherSlug: talk.teacherSlug ?? null,
-      centerName: talk.centerName ?? null,
-      centerSlug: talk.centerSlug ?? null,
-      retreatTitle: retreat.title,
-      retreatSlug: retreat.slug,
-      duration: talk.duration,
-      audioUrl: talk.audioUrl,
-    }));
-    setPlaylist(playlist);
-  }, [talksList, setPlaylist, retreat.title, retreat.slug]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newParams = new URLSearchParams(searchParams);
-    if (searchQuery.trim()) {
-      newParams.set("q", searchQuery.trim());
-    } else {
-      newParams.delete("q");
-    }
-    newParams.delete("page");
-    setSearchParams(newParams);
-  };
-
-  const handleSort = (field: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (currentSort === field) {
-      newParams.set("order", currentOrder === "asc" ? "desc" : "asc");
-    } else {
-      newParams.set("sort", field);
-      newParams.set("order", "desc");
-    }
-    setSearchParams(newParams);
-  };
-
-  const handlePlayTalk = (talk: typeof talksList[0]) => {
-    playTalk({
-      id: String(talk.id),
-      title: talk.title,
-      teacher: talk.teacherName ?? null,
-      teacherSlug: talk.teacherSlug ?? null,
-      centerName: talk.centerName ?? null,
-      centerSlug: talk.centerSlug ?? null,
-      duration: talk.duration,
-      audioUrl: talk.audioUrl,
-      retreatSlug: retreat.slug,
-      retreatTitle: retreat.title,
-    });
-  };
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
-
-  const formatDate = (dateInput: string | Date) => {
-    const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric"
-    });
-  };
-
-  const goToPage = (page: number) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("page", String(page));
-    setSearchParams(newParams);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const playFromStart = () => {
+    // Retreats are best heard in order, oldest first.
+    const ordered = [...talkItems].sort(
+      (a, b) => new Date(a.publicationDate ?? 0).getTime() - new Date(b.publicationDate ?? 0).getTime(),
+    );
+    const [first] = ordered;
+    if (first) audio.playNow(toPlayerTalk(first), ordered.map(toPlayerTalk));
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 md:px-8 py-8 md:py-16">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8 md:mb-12 pb-8 md:pb-12 border-b border-text-primary/10"
-      >
-        <h1 className="text-4xl md:text-6xl font-serif font-light text-text-primary mb-4 md:mb-6 tracking-tight leading-tight italic">
-          {retreat.title}
-        </h1>
-        {talksList.length > 0 && talksList[0].centerName && (
-          <Link
-            to={`/centers/${talksList[0].centerSlug}`}
-            className="inline-flex items-center gap-2 text-text-tertiary hover:text-text-secondary transition-colors text-sm md:text-base mb-3"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-            <span>{talksList[0].centerName}</span>
-          </Link>
-        )}
-        {retreat.description && (
-          <p className="text-text-secondary text-sm md:text-base leading-relaxed font-light max-w-3xl">
-            {retreat.description}
+    <div className="animate-rise">
+      <header className="relative -mx-5 overflow-hidden px-5 pb-8 pt-10 sm:-mx-8 sm:px-8 md:pt-16 lg:-mx-12 lg:px-12">
+        <div aria-hidden className="dusk-glow absolute inset-0" />
+        <div className="relative">
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-accent-ink">Retreat</p>
+          <h1 className="mt-3 max-w-3xl text-balance font-serif text-4xl italic leading-[1.05] tracking-tight md:text-6xl">
+            {retreat.title}
+          </h1>
+          <p className="mt-4 text-sm text-ink-soft">
+            {formatCount(pagination.total, "talk")}
+            {teacherList.length ? ` · ${formatCount(teacherList.length, "teacher")}` : ""}
+            {dates.length && pagination.pages <= 1
+              ? ` · ${formatDate(Math.min(...dates))}${Math.max(...dates) - Math.min(...dates) > 86400000 ? ` – ${formatDate(Math.max(...dates))}` : ""}`
+              : ""}
+            {pagination.pages <= 1 && totalDuration ? ` · ${formatDuration(totalDuration)}` : ""}
           </p>
-        )}
-      </motion.div>
-
-      {/* Tabs */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="mb-8 md:mb-12"
-      >
-        <div className="flex items-center gap-6 border-b border-text-primary/10">
-          <button
-            onClick={() => setActiveTab("talks")}
-            className={`pb-3 px-1 text-sm md:text-base tracking-wide transition-colors relative ${
-              activeTab === "talks"
-                ? "text-text-primary font-medium"
-                : "text-text-tertiary hover:text-text-secondary"
-            }`}
-          >
-            Talks ({pagination.total})
-            {activeTab === "talks" && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-text-primary"
-              />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("teachers")}
-            className={`pb-3 px-1 text-sm md:text-base tracking-wide transition-colors relative ${
-              activeTab === "teachers"
-                ? "text-text-primary font-medium"
-                : "text-text-tertiary hover:text-text-secondary"
-            }`}
-          >
-            Teachers ({teachers.length})
-            {activeTab === "teachers" && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-text-primary"
-              />
-            )}
+          {retreat.description ? (
+            <p className="mt-6 max-w-2xl whitespace-pre-line text-pretty font-serif text-lg leading-relaxed text-ink-soft">
+              {retreat.description}
+            </p>
+          ) : null}
+          <button type="button" onClick={playFromStart} className={cn(buttonClass("primary"), "mt-7 pl-2 pr-5")}>
+            <span className="flex size-8 items-center justify-center rounded-full bg-accent text-on-accent">
+              <PlayGlyph playing={false} size={13} />
+            </span>
+            Play from the beginning
           </button>
         </div>
-      </motion.div>
+      </header>
 
-      {/* Talks Tab */}
-      {activeTab === "talks" && (
-        <>
-          {/* Search and Sort */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-8 md:mb-12 flex flex-col md:flex-row items-start md:items-end justify-between gap-4 md:gap-8 pb-6 border-b border-text-primary/10"
-          >
-            <form onSubmit={handleSearch} className="w-full md:flex-1 md:max-w-sm">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search talks..."
-                className="w-full px-0 py-2.5 border-b-2 border-text-primary/15 bg-transparent focus:border-text-primary/40 focus:outline-none text-text-primary placeholder:text-text-tertiary/60 transition-colors text-sm md:text-base"
-              />
-            </form>
-
-            <div className="flex items-center gap-1 text-xs md:text-sm tracking-wide overflow-x-auto w-full md:w-auto">
-              <button
-                onClick={() => handleSort("date")}
-                className={`px-3 py-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  currentSort === "date"
-                    ? "text-text-primary font-medium"
-                    : "text-text-tertiary hover:text-text-secondary"
-                }`}
-              >
-                Date {currentSort === "date" && (currentOrder === "desc" ? "↓" : "↑")}
-              </button>
-              <span className="text-text-tertiary/30">·</span>
-              <button
-                onClick={() => handleSort("title")}
-                className={`px-3 py-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  currentSort === "title"
-                    ? "text-text-primary font-medium"
-                    : "text-text-tertiary hover:text-text-secondary"
-                }`}
-              >
-                Title {currentSort === "title" && (currentOrder === "desc" ? "↓" : "↑")}
-              </button>
-              <span className="text-text-tertiary/30">·</span>
-              <button
-                onClick={() => handleSort("teacher")}
-                className={`px-3 py-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  currentSort === "teacher"
-                    ? "text-text-primary font-medium"
-                    : "text-text-tertiary hover:text-text-secondary"
-                }`}
-              >
-                Teacher {currentSort === "teacher" && (currentOrder === "desc" ? "↓" : "↑")}
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Talks List */}
-          <div className="space-y-0">
-            {talksList.map((talk, index) => {
-              const isCurrentlyPlaying = currentTalk?.id === String(talk.id) && isPlaying;
-
-              return (
-                <motion.div
-                  key={talk.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: index * 0.01, duration: 0.3 }}
-                  className="group border-b border-text-primary/8 hover:bg-text-primary/[0.015] transition-all"
-                >
-                  <div className="py-5 flex items-start gap-4 md:gap-5">
-                    {/* Play Button */}
-                    <button
-                      onClick={() => handlePlayTalk(talk)}
-                      className="shrink-0 mt-0.5 w-8 h-8 md:w-9 md:h-9 rounded-full border border-text-primary/25 flex items-center justify-center hover:border-text-primary hover:bg-text-primary/5 active:bg-text-primary active:text-white transition-all cursor-pointer"
-                      aria-label={isCurrentlyPlaying ? "Pause" : "Play"}
-                    >
-                      {isCurrentlyPlaying ? (
-                        <motion.div
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                          className="w-2 h-2 bg-text-primary rounded-full"
-                        />
-                      ) : (
-                        <Play size={12} fill="currentColor" className="ml-0.5" />
-                      )}
-                    </button>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <Link
-                        to={`/talks/${talk.slug}`}
-                        className="block group/link mb-2"
-                      >
-                        <h3 className="text-base md:text-lg font-light text-text-primary group-hover/link:text-text-primary/60 transition-colors leading-tight">
-                          {talk.title}
-                        </h3>
-                      </Link>
-
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs md:text-sm text-text-tertiary tracking-wide">
-                        {talk.teacherName && (
-                          <Link
-                            to={`/teachers/${talk.teacherSlug}`}
-                            className="hover:text-text-secondary transition-colors font-medium"
-                          >
-                            {talk.teacherName}
-                          </Link>
-                        )}
-                        <span className="text-text-tertiary/40">·</span>
-                        <span>{formatDate(talk.publicationDate)}</span>
-                        <span className="text-text-tertiary/40">·</span>
-                        <span className="tabular-nums">{formatDuration(talk.duration)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+      {teacherList.length > 1 ? (
+        <Section title="Teachers">
+          <div className="-mx-5 flex gap-4 overflow-x-auto px-5 pb-2 scrollbar-none sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
+            {teacherList.map((teacher) => (
+              <TeacherTile key={teacher.id} teacher={teacher} />
+            ))}
           </div>
+        </Section>
+      ) : null}
 
-          {/* Pagination */}
-          {pagination.pages > 1 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="pt-12 pb-4 flex items-center justify-between border-t border-text-primary/10 mt-8"
-            >
-              <button
-                onClick={() => goToPage(Math.max(1, pagination.current - 1))}
-                disabled={pagination.current === 1}
-                className="px-5 py-2.5 text-sm text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer tracking-wide"
-              >
-                ← Previous
-              </button>
-
-              <div className="text-sm text-text-tertiary tracking-wide">
-                {pagination.current} / {pagination.pages}
-              </div>
-
-              <button
-                onClick={() => goToPage(Math.min(pagination.pages, pagination.current + 1))}
-                disabled={pagination.current === pagination.pages}
-                className="px-5 py-2.5 text-sm text-text-primary hover:text-text-primary/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer tracking-wide"
-              >
-                Next →
-              </button>
-            </motion.div>
-          )}
-        </>
-      )}
-
-      {/* Teachers Tab */}
-      {activeTab === "teachers" && (
-        <div className="space-y-0">
-          {teachers.map((teacher, index) => (
-            <motion.div
-              key={teacher.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: index * 0.01, duration: 0.3 }}
-              className="group border-b border-text-primary/8 hover:bg-text-primary/[0.015] transition-all"
-            >
-              <Link to={`/teachers/${teacher.slug}`} className="block py-5">
-                <div className="flex items-start gap-5 md:gap-6">
-                  {/* Profile Image */}
-                  {teacher.profileImageUrl && (
-                    <div className="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-text-primary/5">
-                      <img
-                        src={teacher.profileImageUrl}
-                        alt={teacher.name}
-                        className="w-full h-full object-cover grayscale opacity-80"
-                      />
-                    </div>
-                  )}
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg md:text-xl font-light text-text-primary group-hover:text-text-primary/60 transition-colors leading-tight mb-2">
-                      {teacher.name}
-                    </h3>
-
-                    <div className="text-xs md:text-sm text-text-tertiary tracking-wide">
-                      {Number(teacher.talksCount)} talks
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
+      <section className="py-6 md:py-8">
+        <div className="sticky top-14 z-20 -mx-5 mb-2 flex items-center justify-between gap-4 border-b border-line bg-paper/90 px-5 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:top-0 lg:-mx-12 lg:px-12">
+          <h2 className="font-serif text-2xl tracking-tight">Talks</h2>
+          <SortTabs
+            current={sort}
+            order={order}
+            options={[
+              { field: "date", label: "Date", defaultOrder: "asc" },
+              { field: "title", label: "Title", defaultOrder: "asc" },
+              { field: "teacher", label: "Teacher", defaultOrder: "asc" },
+            ]}
+          />
         </div>
-      )}
+        <TalkList talks={talkItems} showTeacher={teacherList.length !== 1} />
+        <Pagination current={pagination.current} pages={pagination.pages} />
+      </section>
     </div>
   );
 }

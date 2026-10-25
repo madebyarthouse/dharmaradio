@@ -1,11 +1,18 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, Link } from "react-router";
-import { eq, sql } from "drizzle-orm";
-import { motion } from "motion/react";
-import { Play } from "lucide-react";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { ListPlus, Share } from "lucide-react";
 import { db } from "~/db/client.server";
 import { talks, teachers, retreats, centers } from "~/db/schema";
 import { useAudio } from "~/contexts/audio-context";
+import { useLibrary } from "~/contexts/library-context";
+import { useUI } from "~/contexts/ui-context";
+import { fromNestedRow, toPlayerTalk, type TalkListItem } from "~/lib/talk";
+import { formatCount, formatDate, formatDuration, formatRemaining } from "~/lib/format";
+import { LikeButton, SaveButton, TalkList } from "~/components/talk-row";
+import { Avatar, Section, SectionLink, buttonClass } from "~/components/ui/primitives";
+import { PlayGlyph } from "~/components/play-glyph";
+import { cn } from "~/lib/cn";
 import { cacheHeader } from "pretty-cache-header";
 import { withCachedJson } from "~/lib/cache.server";
 
@@ -26,7 +33,7 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
 
   const { talk } = data;
   const teacherName = talk.teacher?.name;
-  const title = `${talk.title}${teacherName ? ` - ${teacherName}` : ""} | Dharma Radio`;
+  const title = `${talk.title}${teacherName ? ` — ${teacherName}` : ""} | Dharma Radio`;
 
   return [
     { title },
@@ -42,7 +49,7 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
   ];
 };
 
-export async function loader({ params, request, context }: LoaderFunctionArgs) {
+export async function loader({ params, context }: LoaderFunctionArgs) {
   const { slug } = params;
 
   if (!slug) {
@@ -51,7 +58,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
 
   return withCachedJson(
     context.cloudflare.env.DB_QUERY_CACHE,
-    `talk:${slug}`,
+    `talk:v2:${slug}`,
     900,
     async () => {
       const database = db(context.cloudflare.env.DB);
@@ -125,9 +132,43 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
         .where(talk.centerId ? eq(centers.id, talk.centerId) : undefined)
         .groupBy(centers.id);
 
-      const [teacher] = await teacherQuery;
-      const [retreat] = await retreatQuery;
-      const [center] = await centerQuery;
+      const relatedSelect = {
+        id: talks.id,
+        title: talks.title,
+        slug: talks.slug,
+        duration: talks.duration,
+        audioUrl: talks.audioUrl,
+        publicationDate: talks.publicationDate,
+        teacher: {
+          name: teachers.name,
+          slug: teachers.slug,
+          profileImageUrl: teachers.profileImageUrl,
+        },
+        center: { name: centers.name, slug: centers.slug },
+        retreat: { title: retreats.title, slug: retreats.slug },
+      };
+
+      const relatedQuery = (where: ReturnType<typeof eq>) =>
+        database
+          .select(relatedSelect)
+          .from(talks)
+          .leftJoin(teachers, eq(talks.teacherId, teachers.id))
+          .leftJoin(centers, eq(talks.centerId, centers.id))
+          .leftJoin(retreats, eq(talks.retreatId, retreats.id))
+          .where(and(where, ne(talks.id, talk.id)))
+          .orderBy(desc(talks.publicationDate))
+          .limit(6);
+
+      const [[teacher], [retreat], [center], fromRetreat, fromTeacher] =
+        await Promise.all([
+          teacherQuery,
+          talk.retreatId ? retreatQuery : Promise.resolve([]),
+          talk.centerId ? centerQuery : Promise.resolve([]),
+          talk.retreatId
+            ? relatedQuery(eq(talks.retreatId, talk.retreatId))
+            : Promise.resolve([]),
+          relatedQuery(eq(talks.teacherId, talk.teacherId)),
+        ]);
 
       return {
         talk: {
@@ -136,271 +177,180 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
           retreat,
           center,
         },
+        fromRetreat,
+        fromTeacher,
       };
     },
   );
 }
 
 export default function TalkDetail() {
-  const { talk } = useLoaderData<typeof loader>();
-  const { playTalk, pauseTalk, isPlaying, currentTalk } = useAudio();
-  const isCurrentlyPlaying = currentTalk?.id === String(talk.id) && isPlaying;
+  const { talk, fromRetreat, fromTeacher } = useLoaderData<typeof loader>();
+  const audio = useAudio();
+  const library = useLibrary();
+  const ui = useUI();
 
-  const handlePlayToggle = () => {
-    if (isCurrentlyPlaying) {
-      pauseTalk();
-    } else {
-      playTalk({
-        id: String(talk.id),
-        title: talk.title,
-        teacher: talk.teacher?.name || null,
-        duration: talk.duration,
-        audioUrl: talk.audioUrl,
-        teacherSlug: talk.teacher?.slug || null,
-        centerName: talk.center?.name || null,
-        centerSlug: talk.center?.slug || null,
-        retreatTitle: talk.retreat?.title || null,
-        retreatSlug: talk.retreat?.slug || null,
-      });
+  const item: TalkListItem = {
+    id: talk.id,
+    slug: talk.slug,
+    title: talk.title,
+    duration: talk.duration,
+    audioUrl: talk.audioUrl,
+    publicationDate: talk.publicationDate,
+    teacher: talk.teacher
+      ? { name: talk.teacher.name, slug: talk.teacher.slug, profileImageUrl: talk.teacher.profileImageUrl }
+      : null,
+    center: talk.center ? { name: talk.center.name, slug: talk.center.slug } : null,
+    retreat: talk.retreat ? { title: talk.retreat.title, slug: talk.retreat.slug } : null,
+  };
+  const retreatTalks = fromRetreat.map(fromNestedRow);
+  const teacherTalks = fromTeacher.map(fromNestedRow);
+
+  const isCurrent = audio.currentTalk?.id === talk.id;
+  const playing = isCurrent && audio.isPlaying;
+  const progress = library.progress.get(talk.id);
+  const resumable = progress && !progress.completed && progress.positionSec > 30;
+
+  const play = () => {
+    if (isCurrent) return audio.togglePlay();
+    // Queue continues with the rest of the retreat, else more from the teacher.
+    const next = retreatTalks.length ? retreatTalks : teacherTalks;
+    audio.playNow(toPlayerTalk(item), [item, ...next].map(toPlayerTalk));
+  };
+
+  const share = async () => {
+    const url = window.location.href;
+    if (navigator.share) await navigator.share({ title: talk.title, url }).catch(() => {});
+    else {
+      await navigator.clipboard.writeText(url);
+      ui.toast("Link copied");
     }
   };
 
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
-
-  const formatDate = (dateInput: Date | number | string) => {
-    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "PodcastEpisode",
+    name: talk.title,
+    description: talk.description ?? undefined,
+    datePublished: new Date(talk.publicationDate).toISOString(),
+    timeRequired: `PT${Math.round(talk.duration / 60)}M`,
+    associatedMedia: { "@type": "MediaObject", contentUrl: talk.audioUrl },
+    author: talk.teacher ? { "@type": "Person", name: talk.teacher.name } : undefined,
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 md:px-8 py-6 md:py-8">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <div className="flex items-start gap-4 mb-6">
-          {/* Play Button */}
-          <button
-            onClick={handlePlayToggle}
-            className="shrink-0 mt-1 w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-text-primary/30 flex items-center justify-center hover:border-text-primary hover:bg-text-primary/5 active:bg-text-primary active:text-white transition-all cursor-pointer"
-            aria-label={isCurrentlyPlaying ? "Pause" : "Play"}
-          >
-            {isCurrentlyPlaying ? (
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="w-2.5 h-2.5 bg-text-primary rounded-full"
-              />
-            ) : (
-              <Play size={18} fill="currentColor" className="ml-0.5" />
-            )}
-          </button>
-
-          {/* Title */}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-serif font-light text-text-primary mb-3 tracking-tight leading-tight">
-              {talk.title}
-            </h1>
-
-            {/* Metadata */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-tertiary mb-4">
-              <span>{formatDate(talk.publicationDate)}</span>
-              <span className="text-text-tertiary/40">·</span>
-              <span className="tabular-nums">{formatDuration(talk.duration)}</span>
-            </div>
-
-            {/* Related Links */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-              {talk.teacher && (
-                <Link
-                  to={`/teachers/${talk.teacher.slug}`}
-                  className="inline-flex items-center gap-2 text-text-primary hover:text-text-primary/60 transition-colors"
-                >
-                  {talk.teacher.profileImageUrl && (
-                    <div className="w-6 h-6 rounded-full overflow-hidden bg-text-primary/5 border border-text-primary/10">
-                      <img
-                        src={talk.teacher.profileImageUrl}
-                        alt={talk.teacher.name}
-                        className="w-full h-full object-cover grayscale opacity-90"
-                      />
-                    </div>
-                  )}
-                  <span>{talk.teacher.name}</span>
+    <article className="animate-rise">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <header className="relative -mx-5 overflow-hidden px-5 pb-8 pt-8 sm:-mx-8 sm:px-8 md:pt-14 lg:-mx-12 lg:px-12">
+        <div aria-hidden className="dusk-glow absolute inset-0" />
+        <div className="relative">
+          <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-x-2 text-sm text-ink-faint">
+            <Link to="/talks" className="hover:text-ink">Talks</Link>
+            {talk.retreat ? (
+              <>
+                <span aria-hidden>/</span>
+                <Link to={`/retreats/${talk.retreat.slug}`} className="line-clamp-1 italic hover:text-ink">
+                  {talk.retreat.title}
                 </Link>
-              )}
+              </>
+            ) : null}
+          </nav>
 
-              {talk.retreat && (
-                <>
-                  <span className="text-text-tertiary/40">·</span>
-                  <Link
-                    to={`/retreats/${talk.retreat.slug}`}
-                    className="italic text-text-secondary hover:text-text-primary transition-colors"
-                  >
-                    {talk.retreat.title}
-                  </Link>
-                </>
-              )}
+          <h1 className="max-w-3xl text-balance font-serif text-4xl leading-[1.05] tracking-tight md:text-6xl">
+            {talk.title}
+          </h1>
 
-              {talk.center && (
-                <>
-                  <span className="text-text-tertiary/40">·</span>
-                  <Link
-                    to={`/centers/${talk.center.slug}`}
-                    className="text-text-secondary hover:text-text-primary transition-colors"
-                  >
-                    {talk.center.name}
-                  </Link>
-                </>
-              )}
-            </div>
+          {talk.teacher ? (
+            <Link to={`/teachers/${talk.teacher.slug}`} className="group mt-6 inline-flex items-center gap-3">
+              <Avatar src={talk.teacher.profileImageUrl} name={talk.teacher.name} size={44} />
+              <span>
+                <span className="block font-medium group-hover:underline decoration-line-strong underline-offset-4">
+                  {talk.teacher.name}
+                </span>
+                <span className="block text-sm text-ink-faint">
+                  {formatDate(talk.publicationDate)}
+                  {talk.center ? ` · ${talk.center.name}` : ""}
+                </span>
+              </span>
+            </Link>
+          ) : null}
+
+          <div className="mt-8 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={play}
+              className={cn(buttonClass("primary"), "h-14 gap-3 pl-2 pr-6 text-base")}
+            >
+              <span className="flex size-10 items-center justify-center rounded-full bg-accent text-on-accent">
+                <PlayGlyph playing={playing} size={16} />
+              </span>
+              {playing
+                ? "Pause"
+                : isCurrent
+                  ? "Resume"
+                  : resumable
+                    ? `Resume · ${formatRemaining(progress.positionSec, talk.duration)}`
+                    : `Play · ${formatDuration(talk.duration)}`}
+            </button>
+            <SaveButton talkId={talk.id} className="size-12 border border-line" />
+            <LikeButton talkId={talk.id} className="size-12 border border-line" />
+            <button
+              type="button"
+              onClick={() => (library.user ? ui.openAddToPlaylist(item) : library.requestSignIn())}
+              aria-label="Add to playlist"
+              className="inline-flex size-12 items-center justify-center rounded-full border border-line text-ink-faint hover:bg-paper-sunken hover:text-ink"
+            >
+              <ListPlus size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => void share()}
+              aria-label="Share"
+              className="inline-flex size-12 items-center justify-center rounded-full border border-line text-ink-faint hover:bg-paper-sunken hover:text-ink"
+            >
+              <Share size={18} />
+            </button>
           </div>
         </div>
+      </header>
 
-        {/* Description */}
-        {talk.description && (
-          <div className="border-t border-text-primary/10 pt-6">
-            <p className="text-sm text-text-secondary leading-relaxed max-w-3xl">
-              {talk.description}
-            </p>
-          </div>
-        )}
-      </motion.div>
+      {talk.description ? (
+        <section className="max-w-2xl border-t border-line py-8">
+          <p className="whitespace-pre-line text-pretty font-serif text-lg leading-relaxed text-ink-soft md:text-xl">
+            {talk.description}
+          </p>
+        </section>
+      ) : null}
 
-      {/* Related Information */}
-      {(talk.teacher || talk.retreat || talk.center) && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-6"
+      {talk.retreat && retreatTalks.length ? (
+        <Section
+          title={<>From <em>{talk.retreat.title}</em></>}
+          action={<SectionLink to={`/retreats/${talk.retreat.slug}`}>{formatCount(Number(talk.retreat.talksCount), "talk")}</SectionLink>}
         >
-          {talk.teacher && (
-            <div className="border-t border-text-primary/10 pt-6">
-              <h2 className="text-xs uppercase tracking-wide text-text-tertiary mb-3">
-                Teacher
-              </h2>
-              <Link
-                to={`/teachers/${talk.teacher.slug}`}
-                className="block group"
-              >
-                <div className="flex items-start gap-4">
-                  {talk.teacher.profileImageUrl && (
-                    <div className="shrink-0 w-12 h-12 rounded-full overflow-hidden bg-text-primary/5 border border-text-primary/10">
-                      <img
-                        src={talk.teacher.profileImageUrl}
-                        alt={talk.teacher.name}
-                        className="w-full h-full object-cover grayscale opacity-90"
-                      />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-light text-text-primary group-hover:text-text-primary/60 transition-colors mb-1">
-                      {talk.teacher.name}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-text-tertiary">
-                      <span>{Number(talk.teacher.talksCount)} talks</span>
-                      {Number(talk.teacher.retreatsCount) > 0 && (
-                        <>
-                          <span className="text-text-tertiary/40">·</span>
-                          <span>{Number(talk.teacher.retreatsCount)} retreats</span>
-                        </>
-                      )}
-                      {Number(talk.teacher.centersCount) > 0 && (
-                        <>
-                          <span className="text-text-tertiary/40">·</span>
-                          <span>{Number(talk.teacher.centersCount)} centers</span>
-                        </>
-                      )}
-                    </div>
-                    {talk.teacher.description && (
-                      <p className="text-xs text-text-tertiary mt-2 line-clamp-2">
-                        {talk.teacher.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            </div>
-          )}
+          <TalkList talks={retreatTalks} />
+        </Section>
+      ) : null}
 
-          {talk.retreat && (
-            <div className="border-t border-text-primary/10 pt-6">
-              <h2 className="text-xs uppercase tracking-wide text-text-tertiary mb-3">
-                Retreat
-              </h2>
-              <Link to={`/retreats/${talk.retreat.slug}`} className="block group">
-                <h3 className="text-base font-light text-text-primary group-hover:text-text-primary/60 transition-colors mb-1 italic">
-                  {talk.retreat.title}
-                </h3>
-                <div className="flex flex-wrap items-center gap-x-2 text-xs text-text-tertiary">
-                  <span>{Number(talk.retreat.talksCount)} talks</span>
-                  {Number(talk.retreat.teachersCount) > 0 && (
-                    <>
-                      <span className="text-text-tertiary/40">·</span>
-                      <span>{Number(talk.retreat.teachersCount)} teachers</span>
-                    </>
-                  )}
-                </div>
-                {talk.retreat.description && (
-                  <p className="text-xs text-text-tertiary mt-2 line-clamp-2">
-                    {talk.retreat.description}
-                  </p>
-                )}
-              </Link>
-            </div>
-          )}
+      {talk.teacher && teacherTalks.length ? (
+        <Section
+          title={`More from ${talk.teacher.name}`}
+          action={<SectionLink to={`/teachers/${talk.teacher.slug}`}>{formatCount(Number(talk.teacher.talksCount), "talk")}</SectionLink>}
+        >
+          <TalkList talks={teacherTalks} showTeacher={false} />
+        </Section>
+      ) : null}
 
-          {talk.center && (
-            <div className="border-t border-text-primary/10 pt-6">
-              <h2 className="text-xs uppercase tracking-wide text-text-tertiary mb-3">
-                Center
-              </h2>
-              <Link to={`/centers/${talk.center.slug}`} className="block group">
-                <h3 className="text-base font-light text-text-primary group-hover:text-text-primary/60 transition-colors mb-1">
-                  {talk.center.name}
-                </h3>
-                <div className="flex flex-wrap items-center gap-x-2 text-xs text-text-tertiary">
-                  <span>{Number(talk.center.talksCount)} talks</span>
-                  {Number(talk.center.teachersCount) > 0 && (
-                    <>
-                      <span className="text-text-tertiary/40">·</span>
-                      <span>{Number(talk.center.teachersCount)} teachers</span>
-                    </>
-                  )}
-                  {Number(talk.center.retreatsCount) > 0 && (
-                    <>
-                      <span className="text-text-tertiary/40">·</span>
-                      <span>{Number(talk.center.retreatsCount)} retreats</span>
-                    </>
-                  )}
-                </div>
-                {talk.center.description && (
-                  <p className="text-xs text-text-tertiary mt-2 line-clamp-2">
-                    {talk.center.description}
-                  </p>
-                )}
-              </Link>
-            </div>
-          )}
-        </motion.div>
-      )}
-    </div>
+      {talk.center ? (
+        <section className="border-t border-line py-8">
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-ink-faint">Recorded at</p>
+          <Link to={`/centers/${talk.center.slug}`} className="mt-2 inline-block font-serif text-2xl hover:underline decoration-line-strong underline-offset-4">
+            {talk.center.name}
+          </Link>
+          <p className="mt-1 text-sm text-ink-faint">
+            {formatCount(Number(talk.center.talksCount), "talk")} · {formatCount(Number(talk.center.teachersCount), "teacher")}
+          </p>
+        </section>
+      ) : null}
+    </article>
   );
 }

@@ -18,20 +18,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /centers/*
-Disallow: /retreats/*
-Disallow: /talks/*
-Disallow: /teachers/*
-Disallow: /*?page=
-Disallow: /*/page
-Disallow: /*?sort=
-Disallow: /*?filter=
-
-# Allow specific top-level pages
-Allow: /centers$
-Allow: /retreats$
-Allow: /talks$
-Allow: /teachers$
+Disallow: /library
+Disallow: /account
+Disallow: /sign-in
+Disallow: /offline
+Disallow: /*?*sort=
+Disallow: /*?*q=
 
 # Sitemaps
 Sitemap: ${baseUrl}/sitemap.xml
